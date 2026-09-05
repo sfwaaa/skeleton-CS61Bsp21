@@ -141,7 +141,8 @@ public class Model extends Observable {
                 //record empty Place
                 if ((currentTile=this.board.tile(col,row))==null){
                     hasEmpty=true;
-                    emptyRow=Math.max(emptyRow,row);
+                    //emptyRow=Math.max(emptyRow,row);
+                    if(emptyRow<row){emptyRow=row;}
                     continue;
                 }
 
@@ -267,7 +268,12 @@ public class Model extends Observable {
                 }
                 //check tile in each direction,
                 //had better write a new method to make following code readable
-                right=Math.clamp(col+1,0,boardSize-1);
+
+                //right=Math.clamp(col+1,0,boardSize-1);
+                right=col+1;
+                if (right>boardSize-1){
+                    right=boardSize-1;
+                }
                 adjacentTile=b.tile(right,row);
                 if (adjacentTile==null){
                     return  true;
@@ -278,7 +284,14 @@ public class Model extends Observable {
                     return  true;
                 }
 
-                left=Math.clamp(col-1,0,boardSize-1);
+                //left=Math.clamp(col-1,0,boardSize-1);
+                left=col-1;
+                if (left<0){
+                    left=0;
+                }
+                else if (left>boardSize-1){
+                    left=boardSize-1;
+                }
                 adjacentTile=b.tile(left,row);
                 if (adjacentTile==null){
                     return  true;
@@ -289,7 +302,13 @@ public class Model extends Observable {
                     return  true;
                 }
 
-                up=Math.clamp(row+1,0,boardSize-1);
+                //up=Math.clamp(row+1,0,boardSize-1);
+                up=row+1;
+                if (up>boardSize-1){
+                    up=boardSize-1;
+                } else if (up < 0) {
+                    up=0;
+                }
                 adjacentTile=b.tile(col,up);
                 if (adjacentTile==null){
                     return  true;
@@ -300,7 +319,13 @@ public class Model extends Observable {
                     return  true;
                 }
 
-                down=Math.clamp(row-1,0,boardSize-1);
+                //down=Math.clamp(row-1,0,boardSize-1);
+                down=row-1;
+                if (down<0){
+                    down=0;
+                } else if (down>boardSize-1) {
+                    down=boardSize-1;
+                }
                 adjacentTile=b.tile(col,down);
                 if (adjacentTile==null){
                     return  true;
