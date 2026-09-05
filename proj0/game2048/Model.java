@@ -110,9 +110,86 @@ public class Model extends Observable {
         boolean changed;
         changed = false;
 
+
         // TODO: Modify this.board (and perhaps this.score) to account
         // for the tilt to the Side SIDE. If the board changed, set the
         // changed local variable to true.
+
+        //set perspective
+        this.board.setViewingPerspective(side);
+
+        //handle the "NORTH"  movement
+        int boardSize=this.board.size();
+        int emptyRow=0;
+        Tile headTile=null;
+        //since we changed the perspective,tile.row() doesn't return the value we need
+        int headTileRow=0;
+        Tile currentTile;
+        boolean canMove=false;
+        boolean hasEmpty=false;
+
+        //I don't know whether defining other private method is allowed,
+        //so the following code appears to be nested...
+        for(int col=0;col<boardSize;col++){
+            emptyRow=0;
+            headTile=null;
+            headTileRow=0;
+            currentTile=null;
+            canMove=false;
+            hasEmpty=false;
+            for(int row=boardSize-1;row>=0;row--){
+                //record empty Place
+                if ((currentTile=this.board.tile(col,row))==null){
+                    hasEmpty=true;
+                    emptyRow=Math.max(emptyRow,row);
+                    continue;
+                }
+
+                //when the first place isn't empty,record the tile
+                if (!hasEmpty&&headTile==null){
+                    headTile=currentTile;
+                    headTileRow=row;
+                    continue;
+                }
+                //when no empty place exists,try to merge adjacent tile
+                if ( !hasEmpty && (currentTile.value()==headTile.value()) ){
+                    emptyRow=row;
+                    this.score+=currentTile.value()*2;
+                    this.board.move(col,headTileRow,currentTile);
+                    headTile=null;
+                    changed=true;
+                    hasEmpty=true;
+                    continue;
+                }
+                else if(!hasEmpty){
+                    headTile=currentTile;
+                    headTileRow=row;
+                    continue;
+                }
+
+                //move to empty Place if empty place exists
+                canMove= (headTile==null)|| (headTile.value()!=currentTile.value());
+                if (canMove){
+                    changed=true;
+                    this.board.move(col,emptyRow,currentTile);
+                    headTile=this.board.tile(col,emptyRow);
+                    headTileRow=emptyRow;
+                    //headTile=currentTile;
+                    emptyRow--;
+                    continue;
+                }
+
+                //merge with headTile
+                this.score+=currentTile.value()*2;
+                this.board.move(col,headTileRow,currentTile);
+                changed=true;
+                headTile=null;
+            }
+
+
+        }
+        //retrieve perspective
+        this.board.setViewingPerspective(Side.NORTH);
 
         checkGameOver();
         if (changed) {
@@ -137,7 +214,14 @@ public class Model extends Observable {
      *  Empty spaces are stored as null.
      * */
     public static boolean emptySpaceExists(Board b) {
-        // TODO: Fill in this function.
+        int boardSize=b.size();
+        for(int row =0;row <boardSize;row++){
+            for (int col=0;col<boardSize;col++){
+                if (b.tile(col,row)==null){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -147,7 +231,16 @@ public class Model extends Observable {
      * given a Tile object t, we get its value with t.value().
      */
     public static boolean maxTileExists(Board b) {
-        // TODO: Fill in this function.
+        int boardSize=b.size();
+        Tile tile=null;
+        for(int row =0;row <boardSize;row++){
+            for (int col=0;col<boardSize;col++){
+                tile=b.tile(col,row);
+                if (tile!=null&&tile.value()>=Model.MAX_PIECE){
+                    return true;
+                }
+            }
+        }
         return false;
     }
 
@@ -158,8 +251,97 @@ public class Model extends Observable {
      * 2. There are two adjacent tiles with the same value.
      */
     public static boolean atLeastOneMoveExists(Board b) {
-        // TODO: Fill in this function.
-        return false;
+        int boardSize = b.size();
+        Tile adjacentTile;
+        Tile currentTile=null;
+        int up;
+        int down;
+        int left;
+        int right;
+        boolean sameValue;
+        for(int row =0;row <boardSize;row++){
+            for (int col=0;col<boardSize;col++){
+                currentTile=b.tile(col,row);
+                if (currentTile==null){
+                    return  true;
+                }
+                //check tile in each direction,
+                //had better write a new method to make following code readable
+                right=Math.clamp(col+1,0,boardSize-1);
+                adjacentTile=b.tile(right,row);
+                if (adjacentTile==null){
+                    return  true;
+                }
+                sameValue= (adjacentTile!=currentTile)&&
+                                (adjacentTile.value()==currentTile.value());
+                if (sameValue){
+                    return  true;
+                }
+
+                left=Math.clamp(col-1,0,boardSize-1);
+                adjacentTile=b.tile(left,row);
+                if (adjacentTile==null){
+                    return  true;
+                }
+                sameValue= (adjacentTile!=currentTile)&&
+                        (adjacentTile.value()==currentTile.value());
+                if (sameValue){
+                    return  true;
+                }
+
+                up=Math.clamp(row+1,0,boardSize-1);
+                adjacentTile=b.tile(col,up);
+                if (adjacentTile==null){
+                    return  true;
+                }
+                sameValue= (adjacentTile!=currentTile)&&
+                        (adjacentTile.value()==currentTile.value());
+                if (sameValue){
+                    return  true;
+                }
+
+                down=Math.clamp(row-1,0,boardSize-1);
+                adjacentTile=b.tile(col,down);
+                if (adjacentTile==null){
+                    return  true;
+                }
+                sameValue= (adjacentTile!=currentTile)&&
+                        (adjacentTile.value()==currentTile.value());
+                if (sameValue){
+                    return  true;
+                }
+            }
+        }
+
+
+        /*
+        //check tiles at corner,use for loop just for convenience
+        Tile currentTile = null;
+        Tile adjacentTile = null;
+        for (int row=0,)
+        currentTile = b.tile(0, 0);
+        if (currentTile == null) {
+            return true;
+        }
+        adjacentTile = b.tile(0, 1);
+        if (adjacentTile == null){
+            return  true;
+        }
+        if (currentTile.value()==adjacentTile.value()){
+            return  true;
+        }
+        //assume this game has at least four block to place tiles
+
+
+
+        //check tiles in first/last row/column
+
+        //check remaining tiles
+
+
+        */
+
+        return  false;
     }
 
 
