@@ -194,7 +194,8 @@ public class LinkedListDequeTest {
                     int lval = list.get(randIndex);
                     System.out.println("get(" + val + ") at"+randIndex);
                     assertEquals(val, lval);
-
+                    lval=list.getRecursive(randIndex);
+                    assertEquals(val, lval);
                     break;
                 case 3://addFirst
                     randVal = StdRandom.uniform(0, 100);

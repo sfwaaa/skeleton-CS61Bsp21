@@ -137,6 +137,25 @@ public class LinkedListDeque<T> implements Iterable<T>,Deque<T> {
     }
 
     /**
+     * Gets the item at the given index,
+     * where 0 is the front, 1 is the next item, and so forth.
+     * If no such item exists, returns null.
+     * @param index the index at which the item is
+     * @return the item at the given index,null if no such item exists
+     */
+    public T getRecursive(int index){
+       return getRecursive(sentinel.next,0,index);
+    }
+    private T getRecursive(Node<T> first,int currentIndex,int targetIndex){
+        if (first==this.sentinel){
+            return null;
+        }
+        if (currentIndex==targetIndex){
+            return first.item;
+        }
+        return getRecursive(first.next,currentIndex+1,targetIndex);
+    }
+    /**
      * Add an item of type T to the front of the deque.
      * Assume item should not be null.
      * @param item item to add
