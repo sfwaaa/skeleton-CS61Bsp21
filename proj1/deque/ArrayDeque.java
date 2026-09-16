@@ -1,12 +1,14 @@
 package deque;
 
+import afu.org.checkerframework.checker.oigj.qual.O;
+
 import java.util.Iterator;
 
 /**
  * Deque based on resizable array
  * @param <T> the type of item you want to store in deque
  */
-public class ArrayDeque<T> implements Iterable<T> {
+public class ArrayDeque<T> implements Iterable<T>,Deque<T> {
 
     /**
      * Default size when constructed
@@ -96,10 +98,12 @@ public class ArrayDeque<T> implements Iterable<T> {
         return new ArrayDequeIterator(this.items,first,last);
     }
 
+
     /**
      * Returns the number of the data in the deque.
      * @return the number of the data in the deque
      */
+    @Override
     public int size(){
         //To make this implementation more interesting,
         //we don't keep track of the actual size in a variable
@@ -118,6 +122,7 @@ public class ArrayDeque<T> implements Iterable<T> {
      * Returns true if deque is empty, false otherwise.
      * @return true if empty,false otherwise
      */
+    @Override
     public boolean isEmpty(){
         return first==last;
     }
@@ -129,14 +134,13 @@ public class ArrayDeque<T> implements Iterable<T> {
      * @param index the index at which the item is
      * @return the item at the given index,null if no such item exists
      */
+    @Override
     public T get(int index){
-        int actualIndex=(first+index)%items.length;
-        if (actualIndex>=last){
+        if (index>=this.size()){
             return null;
         }
-        else{
-            return items[actualIndex];
-        }
+        int actualIndex=(first+index)%items.length;
+        return this.items[actualIndex];
     }
 
     /**
@@ -144,6 +148,7 @@ public class ArrayDeque<T> implements Iterable<T> {
      * Assume item should not be null.
      * @param item item to add
      */
+    @Override
     public void addFirst(T item){
         if (isFull()){
             resize((this.items.length-1)*ArrayDeque.RESIZING_FACTOR);
@@ -161,6 +166,7 @@ public class ArrayDeque<T> implements Iterable<T> {
      * Adds an item of type T to the back of the deque.
      * @param item item to add
      */
+    @Override
     public void addLast(T item){
         if (isFull()){
             resize((this.items.length-1)*ArrayDeque.RESIZING_FACTOR);
@@ -175,7 +181,11 @@ public class ArrayDeque<T> implements Iterable<T> {
      * @return the removed item at the front of the deque,
      * If no such item exists, returns null
      */
+    @Override
     public T removeFirst(){
+        if (this.isEmpty()){
+            return null;
+        }
         T removedItem=this.items[first];
         this.items[first]=null;//avoid loitering
 
@@ -192,7 +202,11 @@ public class ArrayDeque<T> implements Iterable<T> {
      * @return the removed item at the back of the deque,
      * If no such item exists, returns null
      */
+    @Override
     public T removeLast(){
+        if (this.isEmpty()){
+            return null;
+        }
         int actualLast=last-1;
         if (actualLast<0){
             actualLast+=this.items.length;
@@ -213,6 +227,7 @@ public class ArrayDeque<T> implements Iterable<T> {
      *  separated by a space.Once all the items have been printed,
      *  print out a new line.
      */
+    @Override
     public void printDeque(){
         int i=first;
         if (i==last){
@@ -238,11 +253,13 @@ public class ArrayDeque<T> implements Iterable<T> {
      */
     @Override
     public boolean equals(Object o){
-        /*
-         * This if statement can't tell whether o is LinkedListDeque<T>
-         * due to type erasure.
-         * */
-        if (!(o instanceof LinkedListDeque)){
+        if(o==null){
+            return false;
+        }
+        if (o==this){
+            return true;
+        }
+        if (o.getClass()!=this.getClass()){
             return false;
         }
         ArrayDeque<T> deque=(ArrayDeque<T>) o;

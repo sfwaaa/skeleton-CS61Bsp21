@@ -6,7 +6,7 @@ import java.util.Iterator;
  * Deque based on linked list.
  * @param <T> the type of item you want to store in deque
  */
-public class LinkedListDeque<T> implements Iterable<T> {
+public class LinkedListDeque<T> implements Iterable<T>,Deque<T> {
 
 
     /**
@@ -101,6 +101,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * Returns the number of the data in the deque.
      * @return the number of the data in the deque
      */
+    @Override
     public int size(){
         return this.size;
     }
@@ -109,6 +110,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * Returns true if deque is empty, false otherwise.
      * @return true if empty,false otherwise
      */
+    @Override
     public boolean isEmpty(){
         return this.size <= 0;
     }
@@ -120,6 +122,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * @param index the index at which the item is
      * @return the item at the given index,null if no such item exists
      */
+    @Override
     public T get(int index){
         Node<T> current=sentinel.next;
         int currentIndex=0;
@@ -127,6 +130,8 @@ public class LinkedListDeque<T> implements Iterable<T> {
             if (currentIndex==index){
                 return current.item;
             }
+            current=current.next;
+            currentIndex++;
         }
         return null;
     }
@@ -136,6 +141,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * Assume item should not be null.
      * @param item item to add
      */
+    @Override
     public void addFirst(T item){
         Node<T> previousFirst=sentinel.next;
         Node<T> newNode=new Node<>(item);
@@ -154,6 +160,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * Adds an item of type T to the back of the deque.
      * @param item item to add
      */
+    @Override
     public void addLast(T item){
         Node<T> previousLast =sentinel.previous;
         Node<T> newNode=new Node<>(item);
@@ -161,7 +168,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         sentinel.previous=newNode;
 
         newNode.next= sentinel;
-        newNode.previous=previousLast.previous;
+        newNode.previous=previousLast;
 
         previousLast.next=newNode;
 
@@ -173,6 +180,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * @return the removed item at the front of the deque,
      * If no such item exists, returns null
      */
+    @Override
     public T removeFirst(){
         if (this.isEmpty()){
             return null;
@@ -193,6 +201,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      * @return the removed item at the back of the deque,
      * If no such item exists, returns null
      */
+    @Override
     public T removeLast(){
         if (this.isEmpty()){
             return null;
@@ -213,6 +222,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
      *  separated by a space.Once all the items have been printed,
      *  print out a new line.
      */
+    @Override
     public void printDeque(){
         Node<T> current=sentinel.next;
         if (current!=sentinel){
@@ -226,6 +236,7 @@ public class LinkedListDeque<T> implements Iterable<T> {
         current=current.next;
         while (current!=sentinel){
             System.out.print(" "+current.item);
+            current=current.next;
         }
         System.out.println();
     }
@@ -237,11 +248,21 @@ public class LinkedListDeque<T> implements Iterable<T> {
      */
     @Override
     public boolean equals(Object o){
-        /*
+
+        /*obsolete implementation
         * This if statement can't tell whether o is LinkedListDeque<T>
         * due to type erasure.
+        * if (!(o instanceof LinkedListDeque)){
+        *   return false;
+        *}
         * */
-        if (!(o instanceof LinkedListDeque)){
+        if(o==null){
+            return false;
+        }
+        if (o==this){
+            return true;
+        }
+        if (o.getClass()!=this.getClass()){
             return false;
         }
         LinkedListDeque<T> deque=(LinkedListDeque<T>) o;
