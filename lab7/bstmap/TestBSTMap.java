@@ -97,7 +97,7 @@ public class TestBSTMap {
     public void RandomizedTest() {
           Map61B<Integer,Character> bst=new BSTMap<>();
           Map<Integer,Character> ull=new TreeMap<>();
-          int N=1000;
+          int N=10000;
         //Random rand=new Random();
         int op=0;
         int charNum=0;

@@ -1,0 +1,15 @@
+randomInserted(N/7-string)     100     1000    10000          100000         1000000     5000000      10000000
+ULLMap(sec)                     0       0       0.29     (stackOverflow)    (overflow)  (overflow)    (overflow)
+BSTMap(sec)                     0       0         0            0.03            0.64       4.60          10.50
+TreeMap(sec)                    0       0         0            0.02            0.55       4.38          9.08
+HashMap(sec)                    0       0         0            0.02            0.22       1.17          2.64
+
+orderedInserted(N)             100     1000     10000          100000         1000000     5000000      10000000
+ULLMap(sec)                     0       0.01    0.27     (stackOverflow)    (overflow)  (overflow)    (overflow)
+BSTMap(sec)                     0       0.01    0.38     (stackOverflow)    (overflow)  (overflow)    (overflow)
+TreeMap(sec)                    0       0         0             0.03            0.28       1.21          2.38
+HashMap(sec)                    0       0         0             0.02            0.14       0.73          1.59
+
+Conclusion: BSTMap performs approximately as well as java built-in TreeMap in random insertion test,
+but performs as badly ad ULLMap in ordered insertion test.
+

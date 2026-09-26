@@ -1,6 +1,5 @@
 package bstmap;
 
-import java.lang.reflect.Array;
 import java.util.Iterator;
 import java.util.Set;
 
@@ -85,7 +84,7 @@ public class BSTMap<K extends Comparable<K>,V> implements Map61B<K,V>{
      * The number of the entry in bst
      */
     private int size;
-
+    private Entry<K,V> deletedEntry;//Due to java f**king type system,declare a variable here
     public BSTMap(){
         size=0;
         root=null;
@@ -132,36 +131,40 @@ public class BSTMap<K extends Comparable<K>,V> implements Map61B<K,V>{
     /* Returns a Set view of the keys contained in this map.*/
     @Override
     public Set<K> keySet() {
-        return getPreorderKeySet(root);
+        throw new UnsupportedOperationException();
+        //Set<K> keySet=Set.of();
+        //getPreorderKeySet(root,keySet);
+        //return keySet;
     }
 
     /** Removes the mapping for the specified key from this map if present. */
     @Override
     public V remove(K key) {
-        Entry<K,V>[] result=delete(root, key);
-        if (result[0]==null){
+        this.deletedEntry=null;
+        root=delete(root, key);
+        if (deletedEntry==null){
             return null;
         }
-        root=result[1];
         size--;
-        return result[0].value;
+        return deletedEntry.value;
     }
     /** Removes the entry for the specified key
      * only if it is currently mapped to the specified value.*/
     @Override
     public V remove(K key, V value) {
-        Entry<K,V>[] result=delete(root, key,value);
-        if (result[0]==null){
+        this.deletedEntry=null;
+        root=delete(root, key,value);
+        if (deletedEntry==null){
             return null;
         }
-        root=result[1];
         size--;
-        return result[0].value;
+        return deletedEntry.value;
     }
 
     @Override
     public Iterator<K> iterator() {
-        return new BSTMapIterator<>(this.root,this.size);
+        throw new UnsupportedOperationException();
+        //return new BSTMapIterator<>(this.root,this.size);
     }
 
     /**
@@ -180,7 +183,7 @@ public class BSTMap<K extends Comparable<K>,V> implements Map61B<K,V>{
         }
         //every entry repeat its left/right field
         //and then move into the next child
-        int comparison= current.key.compareTo(key);
+        int comparison= key.compareTo(current.key);
         if (comparison==0){
             current.value=value;
             return current;
@@ -205,7 +208,7 @@ public class BSTMap<K extends Comparable<K>,V> implements Map61B<K,V>{
             return null;
         }
 
-        int comparison= current.key.compareTo(key);
+        int comparison= key.compareTo(current.key);
         if (comparison==0){
             return current;
         }
@@ -225,131 +228,121 @@ public class BSTMap<K extends Comparable<K>,V> implements Map61B<K,V>{
      * @return the deleted entry(in [0],null if entry not found)
      * and the proper "current" after deletion(in [1])
      */
-    private Entry<K,V>[] delete(Entry<K,V> current,K key){
+    private Entry<K,V> delete(Entry<K,V> current,K key){
         if (current==null){
-            return (Entry<K, V>[]) new Object[]{null,null};
+            this.deletedEntry=null;
+            return null;
         }
-        Entry<K, V>[] result=null;
-        int comparison= current.key.compareTo(key);
+        int comparison= key.compareTo(current.key);
         //compare and move to the correct subtree if entry not found
         if (comparison<0){
-            result= delete(current.left,key);
-            current.left=result[1];
-            return  result;
+            current.left = delete(current.left,key);
+            return  current;
         }
         else if (comparison>0) {
-            result= delete(current.right,key);
-            current.right=result[1];
-            return result;
+            current.right= delete(current.right,key);
+            return current;
         }
 
         //if found, delete current Item and check if it has subtrees
         if (current.left==null){//leaf or single right subtree
-            result = (Entry<K, V>[]) new Object[2];
-            result[0]=current;
-            result[1]=current.right;
-            return result;
+            this.deletedEntry=current;
+            return current.right;
         }
         if (current.right==null){//single left subtree
-            result = (Entry<K, V>[]) new Object[2];
-            result[0]=current;
-            result[1]=current.left;
-            return result;
+            this.deletedEntry=current;
+            return current.left;
         }
         //two subtrees, replace current with its predecessor(chosen here) or successor
-        result = deleteMax(current.left);
-        Entry<K,V> predecessor=result[0];
-        predecessor.left=result[1];
+        current.left = deleteMax(current.left);
+        Entry<K,V> predecessor=deletedEntry;
 
-        result[0]=current;
-        result[1]=predecessor;
-        return result;
+
+        predecessor.left=current.left;
+        predecessor.right=current.right;
+
+        this.deletedEntry=current;
+        return  predecessor;
+
     }
 
     /**
      * Delete the entry with the given key and given value
-     *(I don't want duplicate code ,
-     * but since it's just a lab with on successive maintaining , I do it for laziness.)
      * @param current root of the current bst
      * @param key the key of the entry to be deleted
-     * @param value the value of the entry to be deleted
      * @return the deleted entry(in [0],null if entry not found)
      * and the proper "current" after deletion(in [1])
      */
-    private Entry<K,V>[] delete(Entry<K,V> current,K key,V value){
+    private Entry<K,V> delete(Entry<K,V> current,K key,V value){
         if (current==null){
-            return (Entry<K, V>[]) new Object[2];
+            this.deletedEntry=null;
+            return null;
         }
-        Entry<K, V>[] result=null;
-        int comparison= current.key.compareTo(key);
+        int comparison= key.compareTo(current.key);
         //compare and move to the correct subtree if entry not found
         if (comparison<0){
-            result= delete(current.left,key);
-            current.left=result[1];
-            return  result;
+            current.left = delete(current.left,key,value);
+            return  current;
         }
         else if (comparison>0) {
-            result= delete(current.right,key);
-            current.right=result[1];
-            return result;
+            current.right= delete(current.right,key,value);
+            return current;
         }
-        if (current.value!=value)
-        {
-            return (Entry<K, V>[]) new Object[]{null,current};
+        if (current.value!=value){
+            this.deletedEntry=null;
+            return null;
         }
+
         //if found, delete current Item and check if it has subtrees
         if (current.left==null){//leaf or single right subtree
-            result = (Entry<K, V>[]) new Object[]{current,current.right};
-            return result;
+            this.deletedEntry=current;
+            return current.right;
         }
         if (current.right==null){//single left subtree
-            result = (Entry<K, V>[]) new Object[]{current,current.left};
-            return result;
+            this.deletedEntry=current;
+            return current.left;
         }
         //two subtrees, replace current with its predecessor(chosen here) or successor
-        result = deleteMax(current.left);
-        Entry<K,V> predecessor=result[0];
-        predecessor.left=result[1];
+        current.left = deleteMax(current.left);
+        Entry<K,V> predecessor=deletedEntry;
 
-        result[0]=current;
-        result[1]=predecessor;
-        return result;
+
+        predecessor.left=current.left;
+
+        this.deletedEntry=current;
+        return  predecessor;
+
     }
 
 
     /**
      * Delete the maximum entry in the bst.
      * @param current root of the current bst
-     * @return the deleted entry(in [0],null if entry not found)
-     * and the proper "current" after deletion(in [1])
+     * @return the proper "current" after deletion(in [1])
      */
-    private Entry<K,V>[] deleteMax(Entry<K,V> current){
+    private Entry<K,V> deleteMax(Entry<K,V> current){
         if (current==null){
-            return (Entry<K, V>[]) new Object[]{null,null};
+            return null;
         }
-        Entry<K, V>[] result=deleteMax(current.right);
-        current.right=result[1];
-        if (result[0]==null){
-            result[0]=current;
-            result[1]=current.left;
+        current.right=deleteMax(current.right);
+        if (current.right==null){
+            this.deletedEntry=current;
+            return current.left;
         }
         else {
-            result[1]=current;
+           return current;
         }
-        return result;
     }
 
     /**
-     * Returns the key set in preorder traversal.
-     * @return key set in preorder traversal
+     * set the key set in preorder traversal in the parameter set.
      */
-    private Set<K> getPreorderKeySet(Entry<K,V> root){
+    private void getPreorderKeySet(Entry<K,V> root,Set<K> keySet){
         if (root==null){
-            return Set.of();
+            return ;
         }
-        Set<K> keySet=getPreorderKeySet(root.left);
         keySet.add(root.key);
-        keySet.addAll(getPreorderKeySet(root.right));
-        return keySet;
+        getPreorderKeySet(root.left,keySet);
+        getPreorderKeySet(root.right,keySet);
     }
 }
