@@ -1,7 +1,13 @@
 package bstmap;
 
 import static org.junit.Assert.*;
+
+import edu.princeton.cs.algs4.StdRandom;
 import org.junit.Test;
+
+import java.util.Map;
+import java.util.Random;
+import java.util.TreeMap;
 
 /** Tests by Brendan Hu, Spring 2015, revised for 2016 by Josh Hug */
 public class TestBSTMap {
@@ -87,4 +93,58 @@ public class TestBSTMap {
         assertTrue(b.containsKey("hi"));
     }
 
+    @Test
+    public void RandomizedTest() {
+          Map61B<Integer,Character> bst=new BSTMap<>();
+          Map<Integer,Character> ull=new TreeMap<>();
+          int N=10000;
+        //Random rand=new Random();
+        int op=0;
+        int charNum=0;
+        String str= "ajindakjdgaoijfiefpq98purq3oijqfnmdvkknfdokfml;s,fmdf;oirjew[0fij9dmaifp0e=093q2";
+        String str1= "ajindakjdgaoijfiefpq98purq3oijqfnmdvkknfdokfml;s,fmdf;oirjew[0fij9dmaifp0e=093q2";
+        String str2= "ajinakaedgaoijfinmlq9sjkc83oijqfnmdvkknfdokfml;s,fmdf;oirjew[0fij9dmhkfp0e=093q2";
+        for (int i = 0; i < N; i++) {
+            op= StdRandom.uniform(0, 6);
+            charNum=StdRandom.uniform(0,str.length());
+            switch (op){
+                case 0://containsKey
+                    System.out.println
+                            ("contains("+str.charAt(charNum)+")="+ull.containsKey(charNum));
+                    assertEquals
+                            (ull.containsKey(charNum),bst.containsKey(charNum));
+                    break;
+                case 1://get
+                    if (!ull.containsKey(charNum)){
+                        break;
+                    }
+                    System.out.println
+                            ("get ("+ charNum +")="+ull.get(charNum));
+                    assertEquals
+                            (ull.get(charNum),bst.get(charNum));
+                    break;
+                case 2://size
+                    System.out.println
+                            ("size ="+ull.size());
+                    assertEquals
+                            (ull.size(),bst.size());
+                    break;
+                case 3://put
+                    System.out.println
+                            ("put( "+charNum+","+str.charAt(charNum)+")");
+                    ull.put(charNum,str.charAt(charNum));
+                    bst.put(charNum,str.charAt(charNum));
+                    break;
+                case 4:
+                    str=str2;
+                    break;
+                case 5:
+                    str=str1;
+                    break;
+                default:
+                    System.out.println("Shouldn't reach here");
+                    break;
+            }
+        }
+    }
 }
