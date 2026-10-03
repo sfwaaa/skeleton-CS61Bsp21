@@ -2,25 +2,48 @@ package gitlet;
 
 // TODO: any imports you need here
 
-import java.util.Date; // TODO: You'll likely use this in this class
 
-/** Represents a gitlet commit object.
- *  TODO: It's a good idea to give a description here of what else this Class
- *  does at a high level.
- *
+import java.util.Date;
+import java.util.Formatter;
+import java.util.Locale;
+
+/**
+ * Represents a gitlet commit object
+ * that just contains what a gitlet commit should have.
+ * It's immutable since created.
  *  @author TODO
  */
 public class Commit {
-    /**
-     * TODO: add instance variables here.
-     *
-     * List all instance variables of the Commit class here with a useful
-     * comment above them describing what that variable represents and how that
-     * variable is used. We've provided one example for `message`.
-     */
-
     /** The message of this Commit. */
-    private String message;
+    public String message;
+    public String sha1;
+    /**
+     * Timestamp , don't directly set it
+     */
+    public Date time;
+    public String parentSha1;
 
-    /* TODO: fill in the rest of this class. */
+    /**
+     * Assign current time to this commit.
+     */
+    public void setCurrentTime(){
+        //make it immutable
+        if (time==null){
+            time = new Date();
+        }
+    }
+
+    /**
+     * Get the timestamp string to display.
+     * @return the proper timestamp string
+     */
+    public String getTimestamp(){
+        Formatter formatter=new Formatter(Locale.ENGLISH);
+        //eg Sat Oct 3 15:07:58 2026 +0800
+        formatter.format
+                ("%ta %tb %tm %tT %tY %tz",time,time,time,time,time,time);
+        String displayString=formatter.toString();
+        formatter.close();
+        return displayString;
+    }
 }
