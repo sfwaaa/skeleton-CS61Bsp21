@@ -5,6 +5,8 @@ import java.io.File;
 
 /**
  * Provides commands to manipulate the .gitlet repository.
+ * It should only interact with class Repository.java
+ * and only care about working directory.
  */
 public class RepositoryManager {
 
@@ -25,4 +27,15 @@ public class RepositoryManager {
                 (Utils.join(workingDirectory, ".gitlet"));
     }
 
+    /**
+     * Initialize a repository if there isn't a repository
+     * @return true if success
+     */
+    public boolean Init(){
+        if(this.repository.exists()){
+            return false;
+        }
+        this.repository.Init();
+        return true;
+    }
 }

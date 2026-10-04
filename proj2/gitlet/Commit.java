@@ -1,11 +1,13 @@
 package gitlet;
 
-// TODO: any imports you need here
+import org.checkerframework.checker.units.qual.C;
 
-
+import java.io.Serializable;
+import java.lang.ref.PhantomReference;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.Locale;
+import java.util.TreeMap;
 
 /**
  * Represents a gitlet commit object
@@ -13,25 +15,67 @@ import java.util.Locale;
  * It's immutable since created.
  *  @author TODO
  */
-public class Commit {
-    /** The message of this Commit. */
+public class Commit implements Serializable,Dumpable {
+    /* The needed message of this Commit. */
     public String message;
-    public String sha1;
     /**
-     * Timestamp , don't directly set it
+     * Timestamp , don't directly set it unless you know what you're doing.
      */
-    public Date time;
+    public Date timestamp;
+
+    /*parent refs*/
     public String parentSha1;
+    public String secondParentSha1;/*Only consider two-branch merging*/
 
     /**
-     * Assign current time to this commit.
+     * A mapping from file name to sha1.
+     * note that in real git, this is responsible for "tree",
+     * but IN GITLET WE DON'T DEAL WITH SUBDIRECTORIES
      */
+    public TreeMap<String,String> map;
+
+    /**
+     * Create a new commit with the given time.
+     * @param time the milliseconds since January 1, 1970, 00:00:00 GMT
+     */
+    public Commit(long time){
+        this.timestamp=new Date(time);
+        this.map=new TreeMap<>();
+        this.parentSha1=null;
+        this.secondParentSha1=null;
+    }
+    /**
+     * Create a new commit with current Time.
+     */
+    public Commit(){
+        this(System.currentTimeMillis());
+    }
+    /**
+     * Create a new commit with current Time and given commit message.
+     */
+    public Commit(String message){
+        this();
+        this.message=message;
+    }
+    /**
+     * Create a new commit with current Time, given commit message and given parent.
+     */
+    public Commit(String message,String parentSha1){
+        this(message);
+        this.parentSha1=parentSha1;
+    }
+
+
+    /*
+     * Assign current time to this commit.
+
     public void setCurrentTime(){
         //make it immutable
-        if (time==null){
-            time = new Date();
+        if (timestamp ==null){
+            timestamp = new Date();
         }
     }
+     */
 
     /**
      * Get the timestamp string to display.
@@ -41,9 +85,23 @@ public class Commit {
         Formatter formatter=new Formatter(Locale.ENGLISH);
         //eg Sat Oct 3 15:07:58 2026 +0800
         formatter.format
-                ("%ta %tb %tm %tT %tY %tz",time,time,time,time,time,time);
+                ("%ta %tb %tm %tT %tY %tz", timestamp, timestamp, timestamp, timestamp, timestamp, timestamp);
         String displayString=formatter.toString();
         formatter.close();
         return displayString;
+    }
+    public long getTime(){
+        return this.timestamp.getTime();
+    }
+
+    @Override
+    public void dump() {
+        //helpful for debugging
+        System.out.println(this.getTimestamp());
+        System.out.println(this.message);
+        System.out.println();
+        System.out.println(parentSha1);
+        System.out.println(secondParentSha1);
+        System.out.println(map.toString());
     }
 }
