@@ -29,13 +29,48 @@ public class RepositoryManager {
 
     /**
      * Initialize a repository if there isn't a repository
-     * @return true if success
+     * @return true if succeed
      */
     public boolean Init(){
-        if(this.repository.exists()){
+        if(existRepository()){
             return false;
         }
         this.repository.Init();
         return true;
+    }
+
+    /**
+     * Adds a copy of the file as it currently exists to the staging area.
+     * @param fileName file name of the working directory.
+     * @return false if the file doesn't exist.
+     */
+    public boolean add(String fileName){
+        //remember we don't deal with subdirectories.
+        File path=Utils.join(workingDirectory,fileName);
+        if (!path.exists()){
+            return false;//here we don't handle "stage for deletion"
+        }
+        repository.stageFile(path,fileName);
+        return true;
+    }
+
+    /**
+     * Make a commit to the repository
+     * @param message commit message
+     * @return true if there is something to be committed in the stage area
+     */
+    public boolean commit(String message){
+        Commit commit=this.repository.createCommitFromIndex(message);
+        if(commit==null){
+            return false;
+        }
+        String sha1 = this.repository.writeCommit(commit);
+        this.repository.updateBranch(sha1);
+        this.repository.clearStageArea();
+        return true;
+    }
+
+    public boolean existRepository(){
+        return this.repository.exists();
     }
 }

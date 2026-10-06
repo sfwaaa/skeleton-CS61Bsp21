@@ -40,7 +40,6 @@ public class Commit implements Serializable,Dumpable {
      */
     public Commit(long time){
         this.timestamp=new Date(time);
-        this.map=new TreeMap<>();
         this.parentSha1=null;
         this.secondParentSha1=null;
     }
@@ -100,8 +99,9 @@ public class Commit implements Serializable,Dumpable {
         System.out.println(this.getTimestamp());
         System.out.println(this.message);
         System.out.println();
-        System.out.println(parentSha1);
-        System.out.println(secondParentSha1);
+        System.out.println("parent sha1:"+parentSha1);
+        System.out.println("secondParentSha1 sha1:"+secondParentSha1);
+        System.out.println();
         System.out.println(map.toString());
     }
 }

@@ -8,14 +8,18 @@ import java.util.TreeMap;
  */
 public class Index {
 
+    /**
+     * The path ./gitlet/index
+     */
     private final File indexFile;
     /**
      * The repository that holds this index.
      */
-    private Repository repository;
+    private final Repository repository;
     /**
      * A mapping from file name to sha1.
-     * sha1==null represents for deletion.
+     * sha1=="" (empty string) represents for deletion.
+     * It is really really very much simpler than the real .git/index
      */
     private TreeMap<String,String> map;
 
@@ -27,11 +31,11 @@ public class Index {
 
     /**
      * Add a file to stage area according to the given commit.
-     * If "stage for deletion" ,the param "file.exist()"should be false.
-     * @param file file (absolute) path
+     * If "staging for deletion" ,the param "file.exist()"should be false.
+     * @param file file path in the working directory
      * @param fileName file name,should be consistent with the name in file
      * @param sha1InCommit the sha1 of the file in the commit,
-     *                     empty if the file isn't tracked by the commit
+     *                     empty string if the file isn't tracked by the commit
      */
     public void add(File file,String fileName,String sha1InCommit){
         boolean maybeDeletion=!file.exists();
@@ -49,43 +53,53 @@ public class Index {
         }
 
         // not deletion
-        //if(file not exists in index)
-        if (!map.containsKey(fileName)){
-            stageFile(file);
-            return;
-        }
+        //Note that we compute the sha1 of the file content
+        byte[] fileContent=Utils.readContents(file);
+        String fileSha1=Utils.sha1((Object) fileContent);
 
-        String stagedSha1=map.get(fileName);
-        byte[] serializedFile=Utils.serialize(file);
-        String fileSha1=Utils.sha1((Object) serializedFile);
-
-        //if (file exists in index && equal to the index)
-        if (stagedSha1.equals(fileSha1)){
-            return;
-        }
         // if(file sha1 equal commit sha1) remove it
         if (fileSha1.equals(sha1InCommit)){
             remove(fileName);
             return;
         }
+        //if(file not exists in index)
+        if (!map.containsKey(fileName)){
+           stageFile(fileName,fileSha1,fileContent);
+            return;
+        }
+
+        String stagedSha1=map.get(fileName);
+        //if (file exists in index && equal to the index)
+        if (stagedSha1.equals(fileSha1)){
+            return;
+        }
         //overwrite it
-        stageFile(file,serializedFile);
+        stageFile(fileName,fileSha1,fileContent);
+    }
+
+
+
+    /**
+     * Return the difference that the stage area holds,don't modify it outside
+     * @return the shallow clone of the mapping from file name to blobs,
+     * return null if there is no staged contents.
+     * Note that a mapping to empty string means deletion.
+     */
+    public TreeMap<String,String> getStagedContent(){
+        if (this.map.isEmpty()){
+            return null;
+        }
+        else {
+            return (TreeMap<String, String>) this.map.clone();
+        }
     }
 
     /**
-     * Remove staged file from stage area and returns its sha1
-     * @param fileName file name of the staged file
-     * @return sha1 of the blob
+     * clear staged content and remove the index file
      */
-    public String remove(String fileName){
-        if (!map.containsKey(fileName)){
-            return null;
-        }
-        String sha1= map.remove(fileName);
-        File removedFile=repository.getObjectsDirectory();
-        removedFile=Utils.join(removedFile,sha1);
-        repository.removeFile(removedFile);//just delete it immediately for simplicity
-        return sha1;
+    public void clear(){
+        this.map=null;
+        this.repository.removeFile(indexFile);
     }
 
     private void retrieveIndex(){
@@ -97,17 +111,65 @@ public class Index {
     }
 
     /**
-     * Store the given file in the repoitory and update the mapping
-     * @param file
+     * Save current Index to the repo
      */
-    private void stageFile(File file){
-
+    private void saveIndex(){
+        byte[] content= Utils.serialize(this.map);
+        repository.writeFile(this.indexFile,content);
     }
-    /**
-     * Store the given file in the repoitory and update the mapping
-     * @param file
-     */
-    private void stageFile(File file,byte[] blob){
 
+    /**
+     * Stage the given file in the working directory and
+     * update the mapping of the index
+     * @param file file path
+     */
+    /*
+    private void stageFile(File file,String fileName){
+        if (file==null||!file.exists()){
+            return;
+        }
+        byte[] content=Utils.readContents(file);
+        String sha1=Utils.sha1(content);
+        this.stageFile(fileName,sha1,content);
+    }*/
+
+    /**
+     * Stage the given blob of the file in the working directory and
+     * update the mapping of the index
+     * @param fileName file name
+     * @param sha1 sha1 of the file
+     * @param blob the serialized file content
+     */
+    private void stageFile(String fileName,String sha1,byte[] blob){
+        File blobPath=Utils.join(repository.getObjectsDirectory(),sha1);
+        this.repository.writeFile(blobPath,blob);
+
+        String previousSha1= map.put(fileName,sha1);
+        saveIndex();
+
+        if (previousSha1==null|| previousSha1.isEmpty()){
+            return;
+        }
+        File discardBlob=Utils.join
+                (repository.getObjectsDirectory(),previousSha1);
+        this.repository.removeFile(discardBlob);
+    }
+
+    /**
+     * Remove the staged file from stage area and returns its sha1.
+     * Do nothing if the file not staged
+     * @param fileName file name of the staged file
+     * @return sha1 of the blob
+     */
+    private String remove(String fileName){
+        if (!map.containsKey(fileName)){
+            return null;
+        }
+        String sha1= map.remove(fileName);
+        File removedFile=repository.getObjectsDirectory();
+        removedFile=Utils.join(removedFile,sha1);
+        repository.removeFile(removedFile);//just delete it immediately for simplicity
+        saveIndex();
+        return sha1;
     }
 }

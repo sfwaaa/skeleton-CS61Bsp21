@@ -1,6 +1,8 @@
 package gitlet;
 
 
+import net.sf.saxon.type.StringConverter;
+
 import java.io.File;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
@@ -19,32 +21,92 @@ public class Main {
         //E:\csLearn\dataStructure\gitletTest
         RepositoryManager repoManager=new RepositoryManager
                 (Utils.join("E:","csLearn","dataStructure","gitletTest"));
-        if (!repoManager.Init()){
-            System.out.println("A Gitlet version-control system " +
-                    "already exists in the current directory.");
+        if (!repoManager.existRepository()){
+            repoManager.Init();
+            //System.out.println("A Gitlet version-control system " +
+              //      "already exists in the current directory.");
         }
+        /*
+        repoManager.add("f1.txt");
+        repoManager.add("f2.txt");
+        repoManager.commit("first commit");
+        * */
+        repoManager.add("f1.txt");
+        repoManager.add("f2.txt");
+        repoManager.add("f3.txt");
+        repoManager.commit("second commit");
 
-        if (args.length==0){
-            //TODO
+        if (true){
             return;
         }
-        // TODO: what if args is empty?
-        String firstArg = args[0];
-        switch(firstArg) {
+
+        /*Real program*/
+        if (args.length==0){
+            System.out.println("Please enter a command.");
+            return;
+        }
+
+        String command = args[0];//make it easy,just hard-code it
+        switch(command) {
             case "init":
+                if(!checkArgs(args,repoManager,false,0)){
+                    return;
+                }
                 if (!repoManager.Init()){
                     System.out.println("A Gitlet version-control system " +
                             "already exists in the current directory.");
                 }
                 break;
             case "add":
-
+                if(!checkArgs(args,repoManager,true,1)){
+                    return;
+                }
+                if(!repoManager.add(args[1])){
+                    System.out.println("File does not exist.");
+                    return;
+                }
+                break;
+            case "commit":
+                if(!checkArgs(args,repoManager,true,1)){
+                    return;
+                }
+                if (args[1].isBlank()){
+                    System.out.println("Please enter a commit message.");
+                    return;
+                }
+                if(!repoManager.commit(args[1])){
+                    System.out.println("No changes added to the commit.");
+                    return;
+                }
                 break;
             default:
-
+                System.out.println("No command with that name exists.");
                 break;
         }
-
-
     }
+
+    /**
+     * Check the user input
+     * @param args cmd line args
+     * @param requireRepo Does the command require ./gitlet?
+     * @param operandCount The number of the operands that the command needs.
+     * @return true if the input is correct.
+     */
+    private static boolean checkArgs
+            (String[]args,
+             RepositoryManager manager,
+             boolean requireRepo,
+             int operandCount){
+        if (requireRepo&&!manager.existRepository()){
+            System.out.println("Not in an initialized Gitlet directory.");
+            return false;
+        }
+        if ((args.length-1)!=operandCount){
+            System.out.println("Incorrect operands.");
+            return false;
+        }
+        return true;
+    }
+
+
 }
