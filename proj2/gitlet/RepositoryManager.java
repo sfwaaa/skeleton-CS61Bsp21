@@ -50,7 +50,27 @@ public class RepositoryManager {
         if (!path.exists()){
             return false;//here we don't handle "stage for deletion"
         }
-        repository.stageFile(path,fileName);
+        repository.stage(path,fileName);
+        return true;
+    }
+
+    /**
+     * Unstage the file or stage it for deletion(and delete it)
+     * @param fileName file name
+     * @return True if unstaged or stage it for deletion
+     */
+    public boolean rm(String fileName){
+        if (this.repository.tryUnstage(fileName)){
+            return true;
+        }
+        Commit commit=this.repository.getLatestCommit();
+        //neither staged nor tracked
+        if (!commit.map.containsKey(fileName)){
+            return false;
+        }
+        File file=Utils.join(this.workingDirectory,fileName);
+        this.repository.removeFile(file);
+        this.repository.stage(file,fileName);
         return true;
     }
 
@@ -72,5 +92,8 @@ public class RepositoryManager {
 
     public boolean existRepository(){
         return this.repository.exists();
+    }
+    public void printStatus(){
+
     }
 }

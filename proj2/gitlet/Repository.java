@@ -2,11 +2,20 @@ package gitlet;
 
 import java.io.File;
 import java.nio.file.Path;
+import java.util.List;
 import java.util.Map;
 import java.util.TreeMap;
 
 // TODO: any imports you need here
 
+/*Note : Stage area is complicated enough to have a separate class manage it.
+But in fact we can also create more classes to handle io,refs etc.
+And let this class Repository be a Facade that just calls other classes' interface
+to provide the abstraction(concept) of the "repository".
+But here I just mixed up nearly all things(except stage area) in this class,
+so this is not a good design...
+Anyway,that's why we need to REFACTOR our programs...But now I'm lazy:>
+*/
 /**
  * Represents a gitlet repository that stores objects(including commits & blobs)
  * and REFs. It also provides methods
@@ -165,6 +174,15 @@ public class Repository {
         return file.delete();
     }
 
+    /**
+     * Get the status info of the file
+     * @param file file path
+     * @param fileName file name
+     * @return the status,null if the file don't exists
+     */
+    public FileStatus getStatus(File file,String fileName){
+        return null;
+    }
     /*Commit manipulation*/
 
     /**
@@ -279,14 +297,43 @@ public class Repository {
         return Path.of(HEADContent).getFileName().toString();
     }
 
+    /**
+     * Get all existing branched
+     * @return all branch name
+     */
+    public String[] getAllBranch(){
+        //should not be null
+        return (String[]) Utils.plainFilenamesIn(this.heads).toArray();
+    }
+    /**
+     * Get all existing branched,marking the current branch.
+     * @param mark prefix of the current branch
+     * @return all branch name with the current branch marked.
+     */
+    public String[] getAllBranch(String mark){
+        //should not be null
+        String[] branches= (String[]) Utils.
+                plainFilenamesIn(this.heads).toArray();
+        String currentBranch=this.getCurrentBranch();
+        for (int i = 0; i < branches.length; i++) {
+            if (branches[i].equals(currentBranch)){
+                branches[i]=mark+currentBranch;
+                return branches;
+            }
+        }
+        return branches;
+    }
+
     /*Stage Area manipulation,listed below for convenience*/
 
     /**
-     * Stage the "modification"(add or delete) of the file in the working directory.
+     * Stage the "modification"(add or delete) of the file
+     * in the working directory.
+     * If stage for deletion,delete the file before staging.
      * @param file the path of the file
      * @param fileName the name of file in the working directory.
      */
-    public void stageFile(File file,String fileName){
+    public void stage(File file, String fileName){
         if (this.currentCommit ==null){
             retrieveLatestCommit();
         }
@@ -295,6 +342,15 @@ public class Repository {
             trackedSha1=this.currentCommit.map.get(fileName);
         }
         this.stageArea.add(file,fileName,trackedSha1);
+    }
+
+    /**
+     * Try to unstage file from the stage area
+     * @param fileName the name of the file in the stage area
+     * @return true if unstage the file
+     */
+    public boolean tryUnstage(String fileName){
+        return this.stageArea.restore(fileName);
     }
 
     /**

@@ -45,6 +45,7 @@ public class Index {
             if (sha1InCommit !=null){
                 //stage deletion
                 this.map.put(fileName,"");
+                this.saveIndex();
                 return;
             }
             else {
@@ -77,10 +78,18 @@ public class Index {
         stageFile(fileName,fileSha1,fileContent);
     }
 
+    /**
+     * Remove the staged file from the stage area
+     * @param fileName name of the file to unstage
+     * @return true if the file is staged and removed successfully
+     */
+    public boolean restore(String fileName){
+        return this.remove(fileName)!=null;
+    }
 
 
     /**
-     * Return the difference that the stage area holds,don't modify it outside
+     * Return the difference that the stage area holds
      * @return the shallow clone of the mapping from file name to blobs,
      * return null if there is no staged contents.
      * Note that a mapping to empty string means deletion.
@@ -111,7 +120,8 @@ public class Index {
     }
 
     /**
-     * Save current Index to the repo
+     * Save current Index to the repo.
+     * Call it after any modification to the index.
      */
     private void saveIndex(){
         byte[] content= Utils.serialize(this.map);
@@ -156,20 +166,26 @@ public class Index {
     }
 
     /**
-     * Remove the staged file from stage area and returns its sha1.
+     * Remove the staged file from stage area ,delete the responding blob and
+     * returns its sha1.
      * Do nothing if the file not staged
      * @param fileName file name of the staged file
-     * @return sha1 of the blob
+     * @return sha1 of the blob,null if the file is unstaged,empty if staged for deletion.
      */
     private String remove(String fileName){
         if (!map.containsKey(fileName)){
             return null;
         }
         String sha1= map.remove(fileName);
+        saveIndex();
+
+        if (sha1.isBlank()){
+            return sha1;
+        }
         File removedFile=repository.getObjectsDirectory();
         removedFile=Utils.join(removedFile,sha1);
         repository.removeFile(removedFile);//just delete it immediately for simplicity
-        saveIndex();
+
         return sha1;
     }
 }

@@ -26,16 +26,22 @@ public class Main {
             //System.out.println("A Gitlet version-control system " +
               //      "already exists in the current directory.");
         }
+
+        //repoManager.add("f1.txt");
+        //repoManager.add("f2.txt");
+        //repoManager.commit("first commit");
+
         /*
-        repoManager.add("f1.txt");
-        repoManager.add("f2.txt");
-        repoManager.commit("first commit");
-        * */
         repoManager.add("f1.txt");
         repoManager.add("f2.txt");
         repoManager.add("f3.txt");
         repoManager.commit("second commit");
+        */
 
+        //repoManager.add("f1.txt");
+        //repoManager.rm("f2.txt");
+        //repoManager.add("f3.txt");
+        repoManager.commit("second commit");
         if (true){
             return;
         }
@@ -76,6 +82,16 @@ public class Main {
                 }
                 if(!repoManager.commit(args[1])){
                     System.out.println("No changes added to the commit.");
+                    return;
+                }
+                break;
+                //
+            case "rm":
+                if(!checkArgs(args,repoManager,true,1)){
+                    return;
+                }
+                if(!repoManager.rm(args[1])){
+                    System.out.println("No reason to remove the file.");
                     return;
                 }
                 break;
