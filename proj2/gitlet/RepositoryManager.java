@@ -1,6 +1,12 @@
 package gitlet;
 
+import jdk.jshell.Snippet;
+import org.checkerframework.checker.units.qual.A;
+
 import java.io.File;
+import java.util.ArrayList;
+import java.util.Collection;
+import java.util.List;
 
 
 /**
@@ -94,6 +100,47 @@ public class RepositoryManager {
         return this.repository.exists();
     }
     public void printStatus(){
+        //Note : real Git is really efficient due to its .git/index,
+        //which stores much info about the file that helps to tell
+        //whether the file is modified.
+        //The following code is rather UGLY and INEFFICIENT due to my inability...
+        ArrayList<String> staged=new ArrayList<>();
+        ArrayList<String> removed=new ArrayList<>();
+        ArrayList<String> unstaged=new ArrayList<>();
+        ArrayList<String> untracked=new ArrayList<>();
 
+        FileStatus status;
+        for(String fileName : Utils.plainFilenamesIn(workingDirectory)){
+            status=repository.getStatus
+                    (Utils.join(workingDirectory,fileName),fileName);
+            if (status.staged){
+                staged.add(fileName);
+            }
+            if (status.removalStaged){
+                removed.add(fileName);
+            }
+            if (status.removalUnstaged){
+                unstaged.add(fileName+" (deleted)");
+            }
+            if (status.unstaged){
+                unstaged.add(fileName+" (modified)");
+            }
+            if (status.untracked){
+                untracked.add(fileName);
+            }
+        }
+        showStatusArray("Branches",
+                List.of(this.repository.getAllBranch("*")));
+        showStatusArray("Staged Files",staged);
+        showStatusArray("Removed Files",removed);
+        showStatusArray("Modifications Not Staged For Commit",unstaged);
+        showStatusArray("Untracked Files",untracked);
+    }
+    private void showStatusArray(String section, Collection<String> infos){
+        System.out.println("== "+section+" ==");
+        for(String info : infos){
+            System.out.println(info);
+        }
+        System.out.println();
     }
 }

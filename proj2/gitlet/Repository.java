@@ -178,10 +178,58 @@ public class Repository {
      * Get the status info of the file
      * @param file file path
      * @param fileName file name
-     * @return the status,null if the file don't exists
+     * @return the status
      */
     public FileStatus getStatus(File file,String fileName){
-        return null;
+        FileStatus status=new FileStatus();
+        if (this.currentCommit==null){
+            retrieveLatestCommit();
+        }
+        TreeMap<String,String> stagedContent=this.stageArea.getStagedContent();
+        TreeMap<String,String> trackedContent=this.currentCommit.map;
+        //quite ugly...
+        String stagedSha1=stagedContent.get(fileName);
+
+        //boolean for determining the status.
+        boolean fileExist=file.exists();
+        boolean stagedForDeletion=false;
+        boolean stagedForAddition=false;
+        boolean trackedByCommit=trackedContent.containsKey(fileName);
+
+        //for staged content
+        if (stagedSha1!=null){
+            //for deletion
+            if (stagedSha1.isBlank()){
+                status.removalStaged=true;
+                stagedForDeletion=true;
+            }
+            else {//for addition
+                status.staged=true;
+               stagedForAddition=true;
+            }
+        }
+
+        //for content in the working directory
+        if (!fileExist){
+            //just a direct translation of the spec.
+            status.removalUnstaged=stagedForAddition||
+                    (!stagedForDeletion && trackedByCommit);
+        }
+        else {
+            //just a direct translation of the spec.
+            //Even more ugly...
+            String fileSha1=Utils.sha1((Object) Utils.readContents(file));
+            boolean differFormCommit=!fileSha1.
+                    equals(trackedContent.get(fileName));
+            boolean differFormIndex=!fileSha1.
+                    equals(trackedContent.get(fileName));
+            status.unstaged=
+                    (trackedByCommit && differFormCommit && !stagedForAddition)||
+                            (stagedForAddition && differFormIndex);
+            status.untracked=stagedForDeletion||
+                    ( !stagedForAddition && !trackedByCommit );
+        }
+        return status;
     }
     /*Commit manipulation*/
 
@@ -209,7 +257,7 @@ public class Repository {
      */
     public Commit createCommitFromIndex(String message){
         TreeMap<String,String> stagedFiles= this.stageArea.getStagedContent();
-        if (stagedFiles==null){
+        if (stagedFiles.isEmpty()){
             return null;
         }
         if (this.currentCommit==null){

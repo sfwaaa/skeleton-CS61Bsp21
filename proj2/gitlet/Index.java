@@ -90,17 +90,11 @@ public class Index {
 
     /**
      * Return the difference that the stage area holds
-     * @return the shallow clone of the mapping from file name to blobs,
-     * return null if there is no staged contents.
+     * @return the shallow clone of the mapping from file name to blobs.
      * Note that a mapping to empty string means deletion.
      */
     public TreeMap<String,String> getStagedContent(){
-        if (this.map.isEmpty()){
-            return null;
-        }
-        else {
-            return (TreeMap<String, String>) this.map.clone();
-        }
+        return (TreeMap<String, String>) this.map.clone();
     }
 
     /**
