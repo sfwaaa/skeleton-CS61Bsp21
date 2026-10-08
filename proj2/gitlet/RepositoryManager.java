@@ -4,9 +4,7 @@ import jdk.jshell.Snippet;
 import org.checkerframework.checker.units.qual.A;
 
 import java.io.File;
-import java.util.ArrayList;
-import java.util.Collection;
-import java.util.List;
+import java.util.*;
 
 
 /**
@@ -104,13 +102,16 @@ public class RepositoryManager {
         //which stores much info about the file that helps to tell
         //whether the file is modified.
         //The following code is rather UGLY and INEFFICIENT due to my inability...
+        //The only strength of it is just "correct"...
         ArrayList<String> staged=new ArrayList<>();
         ArrayList<String> removed=new ArrayList<>();
         ArrayList<String> unstaged=new ArrayList<>();
         ArrayList<String> untracked=new ArrayList<>();
 
+        String[] fileNames=this.repository.getAllFiles(this.workingDirectory);
+
         FileStatus status;
-        for(String fileName : Utils.plainFilenamesIn(workingDirectory)){
+        for(String fileName : fileNames){
             status=repository.getStatus
                     (Utils.join(workingDirectory,fileName),fileName);
             if (status.staged){
@@ -131,7 +132,7 @@ public class RepositoryManager {
         }
         showStatusArray("Branches",
                 List.of(this.repository.getAllBranch("*")));
-        showStatusArray("Staged Files",staged);
+        showStatusArray("Staged Files", staged);
         showStatusArray("Removed Files",removed);
         showStatusArray("Modifications Not Staged For Commit",unstaged);
         showStatusArray("Untracked Files",untracked);

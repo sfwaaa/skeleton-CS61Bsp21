@@ -1,8 +1,6 @@
 package gitlet;
 
 
-import net.sf.saxon.type.StringConverter;
-
 import java.io.File;
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
@@ -39,9 +37,21 @@ public class Main {
         */
 
         //repoManager.add("f1.txt");
-        //repoManager.rm("f2.txt");
-        //repoManager.add("f3.txt");
-        repoManager.commit("second commit");
+        //repoManager.rm("f6.txt");
+        //repoManager.add("f6.txt");
+        //repoManager.commit("Fourth commit");
+        /*
+        repoManager.add("f4.txt");
+        repoManager.add("f1.txt");
+        repoManager.add("f2.txt");
+        repoManager.add("f3.txt");
+        repoManager.add("f5.txt");
+        repoManager.commit("First commit");
+        */
+        //repoManager.add("f7.txt");
+        repoManager.add("f1.txt");
+        repoManager.printStatus();
+
         if (true){
             return;
         }
@@ -55,7 +65,7 @@ public class Main {
         String command = args[0];//make it easy,just hard-code it
         switch(command) {
             case "init":
-                if(!checkArgs(args,repoManager,false,0)){
+                if(!validArgs(args,repoManager,false,0)){
                     return;
                 }
                 if (!repoManager.Init()){
@@ -64,7 +74,7 @@ public class Main {
                 }
                 break;
             case "add":
-                if(!checkArgs(args,repoManager,true,1)){
+                if(!validArgs(args,repoManager,true,1)){
                     return;
                 }
                 if(!repoManager.add(args[1])){
@@ -73,7 +83,7 @@ public class Main {
                 }
                 break;
             case "commit":
-                if(!checkArgs(args,repoManager,true,1)){
+                if(!validArgs(args,repoManager,true,1)){
                     return;
                 }
                 if (args[1].isBlank()){
@@ -87,13 +97,19 @@ public class Main {
                 break;
                 //
             case "rm":
-                if(!checkArgs(args,repoManager,true,1)){
+                if(!validArgs(args,repoManager,true,1)){
                     return;
                 }
                 if(!repoManager.rm(args[1])){
                     System.out.println("No reason to remove the file.");
                     return;
                 }
+                break;
+            case "status":
+                if(!validArgs(args,repoManager,true,0)){
+                    return;
+                }
+                repoManager.printStatus();
                 break;
             default:
                 System.out.println("No command with that name exists.");
@@ -108,7 +124,7 @@ public class Main {
      * @param operandCount The number of the operands that the command needs.
      * @return true if the input is correct.
      */
-    private static boolean checkArgs
+    private static boolean validArgs
             (String[]args,
              RepositoryManager manager,
              boolean requireRepo,

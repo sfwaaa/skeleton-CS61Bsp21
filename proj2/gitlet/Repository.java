@@ -2,9 +2,7 @@ package gitlet;
 
 import java.io.File;
 import java.nio.file.Path;
-import java.util.List;
-import java.util.Map;
-import java.util.TreeMap;
+import java.util.*;
 
 // TODO: any imports you need here
 
@@ -132,6 +130,26 @@ public class Repository {
         return this.objects;
     }
 
+    /**
+     * Get all file name in commit,index and working directory
+     * @param worktree working directory
+     * @return all sorted file name
+     */
+    public String[] getAllFiles(File worktree){
+        HashSet<String> fileSet=new HashSet<>();
+        if (currentCommit==null){
+            retrieveLatestCommit();
+        }
+
+        //REALLY UGLY...
+        fileSet.addAll(this.currentCommit.map.keySet());
+        fileSet.addAll(Utils.plainFilenamesIn(worktree));
+        fileSet.addAll(this.stageArea.getStagedContent().keySet());
+
+        String[] fileNames=fileSet.toArray(new String[0]);
+        Arrays.sort(fileNames);
+        return fileNames;
+    }
     /*Blob manipulation*/
 
     //we only store blobs as "loose object" :
@@ -222,7 +240,7 @@ public class Repository {
             boolean differFormCommit=!fileSha1.
                     equals(trackedContent.get(fileName));
             boolean differFormIndex=!fileSha1.
-                    equals(trackedContent.get(fileName));
+                    equals(stagedContent.get(fileName));
             status.unstaged=
                     (trackedByCommit && differFormCommit && !stagedForAddition)||
                             (stagedForAddition && differFormIndex);
@@ -360,8 +378,9 @@ public class Repository {
      */
     public String[] getAllBranch(String mark){
         //should not be null
-        String[] branches= (String[]) Utils.
-                plainFilenamesIn(this.heads).toArray();
+        List<String> fileNames=Utils.plainFilenamesIn(this.heads);
+        //the param "new String[0]" is rather weird to a c# programmer...
+        String[] branches= fileNames.toArray(new String[0]);
         String currentBranch=this.getCurrentBranch();
         for (int i = 0; i < branches.length; i++) {
             if (branches[i].equals(currentBranch)){
