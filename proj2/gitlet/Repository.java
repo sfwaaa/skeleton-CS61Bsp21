@@ -4,7 +4,6 @@ import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
-// TODO: any imports you need here
 
 /*Note : Stage area is complicated enough to have a separate class manage it.
 But in fact we can also create more classes to handle io,refs etc.
@@ -13,6 +12,9 @@ to provide the abstraction(concept) of the "repository".
 But here I just mixed up nearly all things(except stage area) in this class,
 so this is not a good design...
 Anyway,that's why we need to REFACTOR our programs...But now I'm lazy:>
+
+Note : when implementing checkout command, it's inevitable to refactor the code...
+So I have to be industrious :(
 */
 /**
  * Represents a gitlet repository that stores objects(including commits & blobs)
@@ -43,6 +45,11 @@ public class Repository {
      */
     private final File objects;
     /**
+     * The directory objects/commits that stores all commits.
+     * (in order to make log command implementation easier,separate the commits from the blobs)
+     */
+    private final File commits;
+    /**
      * Latest commit of the current branch
      */
     private Commit currentCommit;
@@ -61,6 +68,7 @@ public class Repository {
      * The file of the pointer that points to current branch.
      */
     private final File HEAD;
+
     /**
      * The pointer that points to current branch,
      * it's always valid after set up.
@@ -81,6 +89,7 @@ public class Repository {
         refs=Utils.join(repoDir,"refs");
         heads=Utils.join(refs,"heads");
         HEAD=Utils.join(repoDir,"HEAD");
+        commits=Utils.join(objects,"commits");
 
         if (this.exists()){
             retrieveRefs();
@@ -110,6 +119,7 @@ public class Repository {
         objects.mkdir();
         refs.mkdir();
         heads.mkdir();
+        commits.mkdir();
         //add initial commit
 
         Commit initialCommit=new Commit(0);
@@ -152,21 +162,20 @@ public class Repository {
     }
     /*Blob manipulation*/
 
-    //we only store blobs as "loose object" :
-    //just a file named by sha1,pointed by some commit
+    //see 6f
 
     /**
      * Write a file in the working directory to the repository,returns its sha1
      * @param file the file in the working directory
      * @return the sha1 of the blob
      */
-    public String writeFile(File file){
+    public String writeBlob(File file){
         if (file==null||!file.exists()){
             return null;
         }
         byte[] content=Utils.readContents(file);
         String sha1=Utils.sha1((Object) content);
-        this.writeFile(Utils.join(objects,sha1),content);
+        this.writeBlob(Utils.join(objects,sha1),content);
         return sha1;
     }
 
@@ -175,7 +184,7 @@ public class Repository {
      * @param filePath
      * @param content
      */
-    public void writeFile(File filePath,byte[] content){
+    public void writeBlob(File filePath, byte[] content){
         Utils.writeContents(filePath, (Object) content);
     }
 
@@ -260,7 +269,7 @@ public class Repository {
         byte[] serializedCommit=Utils.serialize(commit);
         String sha1=Utils.sha1((Object) serializedCommit);
 
-        File commitFile=Utils.join(this.objects,sha1);
+        File commitFile=Utils.join(this.commits,sha1);
         Utils.writeContents(commitFile, (Object) serializedCommit);
         return sha1;
     }
@@ -320,6 +329,37 @@ public class Repository {
         retrieveLatestCommit();
         return currentCommit;
     }
+    /**
+     * Get sha1 of the latest commit of the current branch.
+     * @return
+     */
+    public String getLatestCommitSha1(){
+        if (this.currentCommit==null){
+            retrieveLatestCommit();
+        }
+        return this.currentCommitSha1;
+    }
+
+    /**
+     * Get the specified parent of the current commit
+     * @param commit commit
+     * @param parent index of the parent,0(or "not 1") for the first parent,1 for the second parent
+     * @return the parent commit if parent exists, null if not exist
+     */
+    public Commit getParentCommit(Commit commit,int parent){
+        String parentSha1=commit.parentSha1;
+        if (parent==1){
+            parentSha1=commit.secondParentSha1;
+        }
+        if (parentSha1==null){
+            return null;
+        }
+        return this.getCommit(parentSha1);
+    }
+
+    public CommitIterator commitIterator(){
+        return new CommitIterator(this.commits);
+    }
 
 
     /*REF manipulation,including REFs in commits and branches*/
@@ -338,7 +378,7 @@ public class Repository {
     }
 
     /**
-     * Let the given branch points to the given commit
+     * Let the given branch points to the given commit,create a new branch if necessary
      * @param branch branch name
      * @param sha1 the sha1 of the commit
      */
@@ -364,15 +404,15 @@ public class Repository {
     }
 
     /**
-     * Get all existing branched
+     * Get all existing branch name
      * @return all branch name
      */
     public String[] getAllBranch(){
         //should not be null
-        return (String[]) Utils.plainFilenamesIn(this.heads).toArray();
+        return Utils.plainFilenamesIn(this.heads).toArray(new String[0]);
     }
     /**
-     * Get all existing branched,marking the current branch.
+     * Get all existing branch name,marking the current branch.
      * @param mark prefix of the current branch
      * @return all branch name with the current branch marked.
      */
@@ -389,6 +429,45 @@ public class Repository {
             }
         }
         return branches;
+    }
+
+    /**
+     * Create a new branch (but not let HEAD point to it)
+     * that points to the current commit
+     * @param branchName new branch name
+     * @return true if the given branch doesn't exist and the new branch is created.
+     */
+    public boolean createBranch(String branchName){
+        File branch=Utils.join(this.heads,branchName);
+        if (branch.exists()){
+            return false;
+        }
+        if(currentCommit==null){
+            retrieveLatestCommit();
+        }
+        updateBranch(branchName,this.currentCommitSha1);
+        return false;
+    }
+
+    public boolean existsBranch(String branchName){
+        return Utils.join(this.heads,branchName).exists();
+    }
+    /**
+     * ONLY delete the branch pointer.Since there is no gc like real git,
+     * the commits only reachable from the branch will not be collected.
+     * @param branchName branch name.The branch should exist.
+     * @return true if the branch is deleted,otherwise,false
+     */
+    public boolean removeBranch(String branchName){
+        File branch=Utils.join(this.heads,branchName);
+        if (!branch.exists()){
+            return false;
+        }
+        if (branchName.equals(getCurrentBranch())){
+            return false;
+        }
+        this.removeFile(branch);
+        return true;
     }
 
     /*Stage Area manipulation,listed below for convenience*/
@@ -428,6 +507,8 @@ public class Repository {
         this.stageArea.clear();
     }
 
+
+
     /*Private*/
 
     /**
@@ -446,9 +527,22 @@ public class Repository {
     private void retrieveLatestCommit(){
         File branchPath=Utils.join(gitletDirectory,HEADContent);
         String commitSha1=Utils.readContentsAsString(branchPath);
-        File commitPath=Utils.join(this.objects,commitSha1);
-        this.currentCommit= Utils.readObject(commitPath,Commit.class);
+        this.currentCommit= this.getCommit(commitSha1);
         this.currentCommitSha1=commitSha1;
+    }
+
+    /**
+     * Read commit according to the given sha1
+     * @param sha1 commit sha1
+     * @return the commit
+     */
+    private Commit getCommit(String sha1){
+        File commitPath=Utils.join(this.commits,sha1);
+        if (!commitPath.exists()){
+            return null;
+        }
+        Commit commit = Utils.readObject(commitPath,Commit.class);
+        return commit;
     }
 
 }

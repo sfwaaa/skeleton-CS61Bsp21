@@ -119,7 +119,7 @@ public class Index {
      */
     private void saveIndex(){
         byte[] content= Utils.serialize(this.map);
-        repository.writeFile(this.indexFile,content);
+        repository.writeBlob(this.indexFile,content);
     }
 
     /**
@@ -146,7 +146,7 @@ public class Index {
      */
     private void stageFile(String fileName,String sha1,byte[] blob){
         File blobPath=Utils.join(repository.getObjectsDirectory(),sha1);
-        this.repository.writeFile(blobPath,blob);
+        this.repository.writeBlob(blobPath,blob);
 
         String previousSha1= map.put(fileName,sha1);
         saveIndex();

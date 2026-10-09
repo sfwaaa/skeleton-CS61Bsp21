@@ -1,7 +1,5 @@
 package gitlet;
 
-import jdk.jshell.Snippet;
-import org.checkerframework.checker.units.qual.A;
 
 import java.io.File;
 import java.util.*;
@@ -10,15 +8,13 @@ import java.util.*;
 /**
  * Provides commands to manipulate the .gitlet repository.
  * It should only interact with class Repository.java
- * and only care about working directory.
+ * and doesn't care much about how thing works in the repository.
  */
 public class RepositoryManager {
 
-
-
     private final File workingDirectory;
 
-    private Repository repository;
+    private final Repository repository;
 
     /**
      * Initialize a repository manager
@@ -77,6 +73,34 @@ public class RepositoryManager {
         this.repository.stage(file,fileName);
         return true;
     }
+    /**
+     * Create a new branch (but not let HEAD point to it)
+     * that points to the current commit
+     * @param branchName new branch name
+     * @return true if the given branch doesn't exist and the new branch is created.
+     */
+    public boolean createBranch(String branchName){
+        return this.repository.createBranch(branchName);
+    }
+
+    /**
+     * ONLY delete the branch pointer.Since there is no gc like real git,
+     * the commits only reachable from the branch will not be collected.
+     * @param branchName branch name.The branch should exist.
+     * @return true if the branch is deleted,otherwise,false
+     */
+    public boolean removeBranch(String branchName){
+        return this.repository.removeBranch(branchName);
+    }
+
+    /**
+     * Does the branch exist?
+     * @param branch branch name
+     * @return true if existing
+     */
+    public boolean existsBranch(String branch){
+        return this.repository.existsBranch(branch);
+    }
 
     /**
      * Make a commit to the repository
@@ -92,6 +116,30 @@ public class RepositoryManager {
         this.repository.updateBranch(sha1);
         this.repository.clearStageArea();
         return true;
+    }
+    public void log(){
+        Commit commit=this.repository.getLatestCommit();
+        String sha1=this.repository.getLatestCommitSha1();
+        do {
+            logCommit(commit,sha1);
+
+            sha1=commit.parentSha1;
+            commit=this.repository.getParentCommit(commit,0);
+        }while (commit!=null);
+    }
+
+    /**
+     * print all commits in random order
+     */
+    public void logAll(){
+        CommitIterator iterator=this.repository.commitIterator();
+        String sha1;
+        Commit commit;
+        while (iterator.hasNext()){
+            sha1=iterator.nextSha1();
+            commit=iterator.next();
+            logCommit(commit,sha1);
+        }
     }
 
     public boolean existRepository(){
@@ -137,11 +185,31 @@ public class RepositoryManager {
         showStatusArray("Modifications Not Staged For Commit",unstaged);
         showStatusArray("Untracked Files",untracked);
     }
+
     private void showStatusArray(String section, Collection<String> infos){
         System.out.println("== "+section+" ==");
         for(String info : infos){
             System.out.println(info);
         }
+        System.out.println();
+    }
+    /**
+     * Display the commit.
+     * @param commit commit
+     * @param sha1 commit sha1
+     */
+    private void logCommit(Commit commit,String sha1){
+        if (commit==null){
+            return;
+        }
+        System.out.println("===");
+        System.out.println("commit "+sha1);
+        if (commit.secondParentSha1!=null){
+            System.out.println
+                    ("Merge: "+commit.parentSha1+" "+commit.secondParentSha1);
+        }
+        System.out.println("Date: "+commit.getTimestamp());
+        System.out.println(commit.message);
         System.out.println();
     }
 }

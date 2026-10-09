@@ -27,6 +27,7 @@ public class Main {
 
         //repoManager.add("f1.txt");
         //repoManager.add("f2.txt");
+        //repoManager.printStatus();
         //repoManager.commit("first commit");
 
         /*
@@ -35,7 +36,6 @@ public class Main {
         repoManager.add("f3.txt");
         repoManager.commit("second commit");
         */
-
         //repoManager.add("f1.txt");
         //repoManager.rm("f6.txt");
         //repoManager.add("f6.txt");
@@ -49,8 +49,8 @@ public class Main {
         repoManager.commit("First commit");
         */
         //repoManager.add("f7.txt");
-        repoManager.add("f1.txt");
-        repoManager.printStatus();
+        //repoManager.add("f1.txt");
+        //repoManager.printStatus();
 
         if (true){
             return;
@@ -110,6 +110,40 @@ public class Main {
                     return;
                 }
                 repoManager.printStatus();
+                break;
+            case "log":
+                if(!validArgs(args,repoManager,true,0)){
+                    return;
+                }
+                repoManager.log();
+                break;
+            case "global-log":
+                if(!validArgs(args,repoManager,true,0)){
+                    return;
+                }
+                repoManager.logAll();
+                break;
+            case "branch":
+                if(!validArgs(args,repoManager,true,1)){
+                    return;
+                }
+                if (!repoManager.createBranch(args[1])){
+                    System.out.println("A branch with that name already exists.");
+                    return;
+                }
+                break;
+            case "rm-branch":
+                if(!validArgs(args,repoManager,true,1)){
+                    return;
+                }
+                if (!repoManager.existsBranch(args[1])){
+                    System.out.println("A branch with that name does not exist.");
+                    return;
+                }
+                if (!repoManager.removeBranch(args[1])){
+                    System.out.println("Cannot remove the current branch.");
+                    return;
+                }
                 break;
             default:
                 System.out.println("No command with that name exists.");
