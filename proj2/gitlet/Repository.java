@@ -5,7 +5,8 @@ import java.nio.file.Path;
 import java.util.*;
 
 
-/*Note : Stage area is complicated enough to have a separate class manage it.
+/*
+Note1 : Stage area is complicated enough to have a separate class manage it.
 But in fact we can also create more classes to handle io,refs etc.
 And let this class Repository be a Facade that just calls other classes' interface
 to provide the abstraction(concept) of the "repository".
@@ -13,87 +14,57 @@ But here I just mixed up nearly all things(except stage area) in this class,
 so this is not a good design...
 Anyway,that's why we need to REFACTOR our programs...But now I'm lazy:>
 
-Note : when implementing checkout command, it's inevitable to refactor the code...
-So I have to be industrious :(
+Note2 : when implementing checkout command, it's inevitable to refactor the code...
+So I have to bite the bullet >:(
+
+Note3 : when refactoring, it's necessary to test its correctness,
+which requires thorough testing,however here
+I don't know how to write a test for this program (even the unit test)...
+
 */
 /**
  * Represents a gitlet repository that stores objects(including commits & blobs)
- * and REFs. It also provides methods
- * to write/read these objects and modify these REFs.
+ * and REFs.
+ * This class is just a Facade of Index,RefManager and RepositoryIO
  * NOTE : IN GITLET WE DON'T DEAL WITH SUBDIRECTORIES!!!
  *  @author TODO
  */
 public class Repository {
 
-
     /*IO*/
-
     /**
      * The .gitlet directory.
      * Let this be public when debugging.
      * */
-    private final File gitletDirectory;
+    private final Path gitletDirectory;
+    private final Path workingDirectory;
     /**
      * Is the repository initialized (whether there exists .gitlet).
      */
     private Index stageArea;
+    private RepositoryIO io;
+    private RefManager refs;
 
-    /*Objects*/
-    /**
-     * The directory objects/ that stores all objects, including blobs and commits.
-     * Note that files are simply named by its sha1
-     */
-    private final File objects;
-    /**
-     * The directory objects/commits that stores all commits.
-     * (in order to make log command implementation easier,separate the commits from the blobs)
-     */
-    private final File commits;
     /**
      * Latest commit of the current branch
      */
     private Commit currentCommit;
     private String currentCommitSha1;
 
-    /*REFs*/
-    /**
-     * The directory refs/ that stores all REFs
-     */
-    private final File refs;
-    /**
-     * The directory refs/heads that stores local branches.
-     */
-    private final File heads;
-    /**
-     * The file of the pointer that points to current branch.
-     */
-    private final File HEAD;
-
-    /**
-     * The pointer that points to current branch,
-     * it's always valid after set up.
-     * Note that it stores the relative path of a branch, E.g. refs/heads/master
-     */
-    private String HEADContent;
-
 
     /**
      * Initialize a repository that is ready to be manipulated.
-     * @param repoDir the .gitlet directory
+     * @param workingDirectory the .gitlet directory
      */
-    public Repository(File repoDir){
-        this.gitletDirectory=repoDir;
-        this.stageArea=new Index(Utils.join(repoDir,"index"),this);
+    public Repository(Path workingDirectory){
+        this.workingDirectory=workingDirectory;
+        this.io=new RepositoryIO(workingDirectory);
+        this.gitletDirectory=io.joinPath(workingDirectory,".gitlet");
+        this.refs=new RefManager(gitletDirectory,io);
 
-        objects=Utils.join(repoDir,"objects");
-        refs=Utils.join(repoDir,"refs");
-        heads=Utils.join(refs,"heads");
-        HEAD=Utils.join(repoDir,"HEAD");
-        commits=Utils.join(objects,"commits");
 
-        if (this.exists()){
-            retrieveRefs();
-        }
+        this.stageArea=new Index(gitletDirectory,this.io);
+
     }
 
 
@@ -102,7 +73,7 @@ public class Repository {
      * @return true if existing.
      */
     public boolean exists(){
-        return this.gitletDirectory.exists();
+        return io.existsRepository();
     }
 
     /**
@@ -115,11 +86,8 @@ public class Repository {
         }
 
         //set up .gitlet directories
-        this.gitletDirectory.mkdir();
-        objects.mkdir();
-        refs.mkdir();
-        heads.mkdir();
-        commits.mkdir();
+        io.initRepository();
+        refs.initRepositoryRefs();
         //add initial commit
 
         Commit initialCommit=new Commit(0);
@@ -128,24 +96,17 @@ public class Repository {
         String sha1 = writeCommit(initialCommit);
 
         //set up REFs(master branch and HEAD)
-        updateBranch("master",sha1);//just be lazy to hard-code.
-        updateHEAD("master");
+        refs.updateBranch("master",sha1);//just be lazy to hard-code.
+        refs.updateHEAD("master");
     }
 
-    /**
-     * Get the directory in which blobs are stored.
-     * @return the objects directory
-     */
-    public File getObjectsDirectory(){
-        return this.objects;
-    }
+    /*Files manipulation*/
 
     /**
      * Get all file name in commit,index and working directory
-     * @param worktree working directory
      * @return all sorted file name
      */
-    public String[] getAllFiles(File worktree){
+    public String[] getAllFiles(){
         HashSet<String> fileSet=new HashSet<>();
         if (currentCommit==null){
             retrieveLatestCommit();
@@ -153,61 +114,29 @@ public class Repository {
 
         //REALLY UGLY...
         fileSet.addAll(this.currentCommit.map.keySet());
-        fileSet.addAll(Utils.plainFilenamesIn(worktree));
+        fileSet.addAll(Utils.plainFilenamesIn(workingDirectory.toFile()));
         fileSet.addAll(this.stageArea.getStagedContent().keySet());
 
         String[] fileNames=fileSet.toArray(new String[0]);
         Arrays.sort(fileNames);
         return fileNames;
     }
-    /*Blob manipulation*/
-
-    //see 6f
 
     /**
-     * Write a file in the working directory to the repository,returns its sha1
-     * @param file the file in the working directory
-     * @return the sha1 of the blob
-     */
-    public String writeBlob(File file){
-        if (file==null||!file.exists()){
-            return null;
-        }
-        byte[] content=Utils.readContents(file);
-        String sha1=Utils.sha1((Object) content);
-        this.writeBlob(Utils.join(objects,sha1),content);
-        return sha1;
-    }
-
-    /**
-     * Write the given content to the given path
-     * @param filePath
-     * @param content
-     */
-    public void writeBlob(File filePath, byte[] content){
-        Utils.writeContents(filePath, (Object) content);
-    }
-
-    /**
-     * Remove a file(not directory) with the given path.
-     * DON'T call this unless you know what you're doing!
-     * @param file file path
+     * remove the file in the working directory
+     * @param fileName file name
      * @return true if deleted
      */
-    public boolean removeFile(File file){
-        if (file==null||!file.exists()||file.isDirectory()){
-            return false;
-        }
-        return file.delete();
+    public boolean removeFile(String fileName){
+        return this.io.deleteFile(io.joinPath(workingDirectory,fileName));
     }
-
+    //see 6f
     /**
-     * Get the status info of the file
-     * @param file file path
+     * Get the status info of the file in the working directory
      * @param fileName file name
      * @return the status
      */
-    public FileStatus getStatus(File file,String fileName){
+    public FileStatus getStatus(String fileName){
         FileStatus status=new FileStatus();
         if (this.currentCommit==null){
             retrieveLatestCommit();
@@ -218,7 +147,8 @@ public class Repository {
         String stagedSha1=stagedContent.get(fileName);
 
         //boolean for determining the status.
-        boolean fileExist=file.exists();
+        Path filePath=io.joinPath(workingDirectory,fileName);
+        boolean fileExist=io.exists(filePath);
         boolean stagedForDeletion=false;
         boolean stagedForAddition=false;
         boolean trackedByCommit=trackedContent.containsKey(fileName);
@@ -245,7 +175,7 @@ public class Repository {
         else {
             //just a direct translation of the spec.
             //Even more ugly...
-            String fileSha1=Utils.sha1((Object) Utils.readContents(file));
+            String fileSha1=io.sha1(io.read(filePath));
             boolean differFormCommit=!fileSha1.
                     equals(trackedContent.get(fileName));
             boolean differFormIndex=!fileSha1.
@@ -258,6 +188,7 @@ public class Repository {
         }
         return status;
     }
+
     /*Commit manipulation*/
 
     /**
@@ -266,12 +197,7 @@ public class Repository {
      * @return the sha1 of the new commit for reference.
      */
     public String writeCommit(Commit commit){
-        byte[] serializedCommit=Utils.serialize(commit);
-        String sha1=Utils.sha1((Object) serializedCommit);
-
-        File commitFile=Utils.join(this.commits,sha1);
-        Utils.writeContents(commitFile, (Object) serializedCommit);
-        return sha1;
+        return io.writeCommit(commit);
     }
 
     /**
@@ -354,12 +280,12 @@ public class Repository {
         if (parentSha1==null){
             return null;
         }
-        return this.getCommit(parentSha1);
+        return io.readCommit(parentSha1);
     }
 
     public CommitIterator commitIterator(){
-        return new CommitIterator(this.commits);
-    }
+        return null;
+    }//TODO
 
 
     /*REF manipulation,including REFs in commits and branches*/
@@ -370,11 +296,7 @@ public class Repository {
      * @param branch branch name,assume it's valid.
      */
     public void updateHEAD(String branch){
-        this.HEADContent=Utils.join(this.heads,branch).toString();
-        this.HEADContent=this.HEADContent.substring
-                (this.gitletDirectory.toString().length()+1);
-        //To be frank,due to the necessity to use Utils,the code in this class seems somehow strange
-        Utils.writeContents(HEAD,this.HEADContent);
+        refs.updateHEAD(branch);
     }
 
     /**
@@ -383,24 +305,22 @@ public class Repository {
      * @param sha1 the sha1 of the commit
      */
     public void updateBranch(String branch,String sha1){
-        File branchFile=Utils.join(this.heads,branch);
-        Utils.writeContents(branchFile,sha1);
+        refs.updateBranch(branch,sha1);
     }
     /**
      * Let CURRENT branch points to the given commit
      * @param sha1 the sha1 of the commit
      */
     public void updateBranch(String sha1){
-        File branchFile=Utils.join(this.gitletDirectory,HEADContent);
-        Utils.writeContents(branchFile,sha1);
+        refs.updateBranch(sha1);
     }
 
     /**
      * Get current branch name
-     * @return
+     * @return current branch name
      */
     public String getCurrentBranch(){
-        return Path.of(HEADContent).getFileName().toString();
+        return refs.currentBranch();
     }
 
     /**
@@ -409,7 +329,7 @@ public class Repository {
      */
     public String[] getAllBranch(){
         //should not be null
-        return Utils.plainFilenamesIn(this.heads).toArray(new String[0]);
+        return refs.getAllBranch();
     }
     /**
      * Get all existing branch name,marking the current branch.
@@ -417,18 +337,7 @@ public class Repository {
      * @return all branch name with the current branch marked.
      */
     public String[] getAllBranch(String mark){
-        //should not be null
-        List<String> fileNames=Utils.plainFilenamesIn(this.heads);
-        //the param "new String[0]" is rather weird to a c# programmer...
-        String[] branches= fileNames.toArray(new String[0]);
-        String currentBranch=this.getCurrentBranch();
-        for (int i = 0; i < branches.length; i++) {
-            if (branches[i].equals(currentBranch)){
-                branches[i]=mark+currentBranch;
-                return branches;
-            }
-        }
-        return branches;
+        return refs.getAllBranch(mark);
     }
 
     /**
@@ -438,8 +347,7 @@ public class Repository {
      * @return true if the given branch doesn't exist and the new branch is created.
      */
     public boolean createBranch(String branchName){
-        File branch=Utils.join(this.heads,branchName);
-        if (branch.exists()){
+        if (refs.exists(branchName)){
             return false;
         }
         if(currentCommit==null){
@@ -450,24 +358,16 @@ public class Repository {
     }
 
     public boolean existsBranch(String branchName){
-        return Utils.join(this.heads,branchName).exists();
+        return refs.exists(branchName);
     }
     /**
      * ONLY delete the branch pointer.Since there is no gc like real git,
-     * the commits only reachable from the branch will not be collected.
+     * the commits only reachable from the branch will not be collected and removed.
      * @param branchName branch name.The branch should exist.
      * @return true if the branch is deleted,otherwise,false
      */
     public boolean removeBranch(String branchName){
-        File branch=Utils.join(this.heads,branchName);
-        if (!branch.exists()){
-            return false;
-        }
-        if (branchName.equals(getCurrentBranch())){
-            return false;
-        }
-        this.removeFile(branch);
-        return true;
+        return refs.removeBranch(branchName);
     }
 
     /*Stage Area manipulation,listed below for convenience*/
@@ -476,10 +376,9 @@ public class Repository {
      * Stage the "modification"(add or delete) of the file
      * in the working directory.
      * If stage for deletion,delete the file before staging.
-     * @param file the path of the file
      * @param fileName the name of file in the working directory.
      */
-    public void stage(File file, String fileName){
+    public void stage(String fileName){
         if (this.currentCommit ==null){
             retrieveLatestCommit();
         }
@@ -487,7 +386,7 @@ public class Repository {
         if (this.currentCommit.map.containsKey(fileName)){
             trackedSha1=this.currentCommit.map.get(fileName);
         }
-        this.stageArea.add(file,fileName,trackedSha1);
+        this.stageArea.add(fileName,trackedSha1);
     }
 
     /**
@@ -511,38 +410,13 @@ public class Repository {
 
     /*Private*/
 
-    /**
-     * Initialize all refs,call it only when the repo is initialized.
-     */
-    private void retrieveRefs(){
-        if (!this.HEAD.exists()){
-            return;
-        }
-        this.HEADContent=Utils.readContentsAsString(this.HEAD);
-    }
 
     /**
      * Retrieve the latest commit of the CURRENT branch,set to member variables
      */
     private void retrieveLatestCommit(){
-        File branchPath=Utils.join(gitletDirectory,HEADContent);
-        String commitSha1=Utils.readContentsAsString(branchPath);
-        this.currentCommit= this.getCommit(commitSha1);
-        this.currentCommitSha1=commitSha1;
-    }
-
-    /**
-     * Read commit according to the given sha1
-     * @param sha1 commit sha1
-     * @return the commit
-     */
-    private Commit getCommit(String sha1){
-        File commitPath=Utils.join(this.commits,sha1);
-        if (!commitPath.exists()){
-            return null;
-        }
-        Commit commit = Utils.readObject(commitPath,Commit.class);
-        return commit;
+        this.currentCommitSha1=refs.getLatestCommitSha1();
+        this.currentCommit= io.readCommit(currentCommitSha1);
     }
 
 }

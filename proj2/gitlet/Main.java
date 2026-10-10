@@ -18,7 +18,7 @@ public class Main {
     public static void main(String[] args) {
         //E:\csLearn\dataStructure\gitletTest
         RepositoryManager repoManager=new RepositoryManager
-                (Utils.join("E:","csLearn","dataStructure","gitletTest"));
+                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
         if (!repoManager.existRepository()){
             repoManager.Init();
             //System.out.println("A Gitlet version-control system " +

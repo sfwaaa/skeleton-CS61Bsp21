@@ -2,6 +2,7 @@ package gitlet;
 
 
 import java.io.File;
+import java.nio.file.Path;
 import java.util.*;
 
 
@@ -12,7 +13,7 @@ import java.util.*;
  */
 public class RepositoryManager {
 
-    private final File workingDirectory;
+    private final Path workingDirectory;
 
     private final Repository repository;
 
@@ -21,10 +22,9 @@ public class RepositoryManager {
      * @param workingDirectory The workingDirectory where
      *                         gitlet commands are carried out.
      */
-    public RepositoryManager(File workingDirectory){
+    public RepositoryManager(Path workingDirectory){
         this.workingDirectory=workingDirectory;
-        this.repository=new Repository
-                (Utils.join(workingDirectory, ".gitlet"));
+        this.repository=new Repository(workingDirectory);
     }
 
     /**
@@ -46,11 +46,7 @@ public class RepositoryManager {
      */
     public boolean add(String fileName){
         //remember we don't deal with subdirectories.
-        File path=Utils.join(workingDirectory,fileName);
-        if (!path.exists()){
-            return false;//here we don't handle "stage for deletion"
-        }
-        repository.stage(path,fileName);
+        repository.stage(fileName);
         return true;
     }
 
@@ -68,9 +64,8 @@ public class RepositoryManager {
         if (!commit.map.containsKey(fileName)){
             return false;
         }
-        File file=Utils.join(this.workingDirectory,fileName);
-        this.repository.removeFile(file);
-        this.repository.stage(file,fileName);
+        this.repository.removeFile(fileName);
+        this.repository.stage(fileName);
         return true;
     }
     /**
@@ -156,12 +151,11 @@ public class RepositoryManager {
         ArrayList<String> unstaged=new ArrayList<>();
         ArrayList<String> untracked=new ArrayList<>();
 
-        String[] fileNames=this.repository.getAllFiles(this.workingDirectory);
+        String[] fileNames=this.repository.getAllFiles();
 
         FileStatus status;
         for(String fileName : fileNames){
-            status=repository.getStatus
-                    (Utils.join(workingDirectory,fileName),fileName);
+            status=repository.getStatus(fileName);
             if (status.staged){
                 staged.add(fileName);
             }

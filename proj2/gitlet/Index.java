@@ -1,6 +1,6 @@
 package gitlet;
 
-import java.io.File;
+import java.nio.file.Path;
 import java.util.TreeMap;
 
 /**
@@ -11,11 +11,9 @@ public class Index {
     /**
      * The path ./gitlet/index
      */
-    private final File indexFile;
-    /**
-     * The repository that holds this index.
-     */
-    private final Repository repository;
+    private final Path indexPath;
+    private final RepositoryIO io;
+
     /**
      * A mapping from file name to sha1.
      * sha1=="" (empty string) represents for deletion.
@@ -23,22 +21,21 @@ public class Index {
      */
     private TreeMap<String,String> map;
 
-    public Index(File index,Repository repo){
-        this.repository=repo;
-        this.indexFile=index;
+    public Index(Path gitletRepository,RepositoryIO io){
+        this.io=io;
+        this.indexPath =io.joinPath(gitletRepository,"index");
         retrieveIndex();
     }
 
     /**
      * Add a file to stage area according to the given commit.
      * If "staging for deletion" ,the param "file.exist()"should be false.
-     * @param file file path in the working directory
      * @param fileName file name,should be consistent with the name in file
      * @param sha1InCommit the sha1 of the file in the commit,
      *                     empty string if the file isn't tracked by the commit
      */
-    public void add(File file,String fileName,String sha1InCommit){
-        boolean maybeDeletion=!file.exists();
+    public void add(String fileName,String sha1InCommit){
+        boolean maybeDeletion=!io.exists(fileName);
         //if (deletion or not exists)
         if (maybeDeletion){
             //if(the file is being tracked)
@@ -55,8 +52,9 @@ public class Index {
 
         // not deletion
         //Note that we compute the sha1 of the file content
-        byte[] fileContent=Utils.readContents(file);
-        String fileSha1=Utils.sha1((Object) fileContent);
+        //but in real git,.git/index stores much info to quickly tell whether the file is modified.
+        byte[] fileContent=io.read(fileName);
+        String fileSha1=io.sha1(fileContent);
 
         // if(file sha1 equal commit sha1) remove it
         if (fileSha1.equals(sha1InCommit)){
@@ -65,7 +63,7 @@ public class Index {
         }
         //if(file not exists in index)
         if (!map.containsKey(fileName)){
-           stageFile(fileName,fileSha1,fileContent);
+           stageFile(fileName);
             return;
         }
 
@@ -75,7 +73,7 @@ public class Index {
             return;
         }
         //overwrite it
-        stageFile(fileName,fileSha1,fileContent);
+        stageFile(fileName);
     }
 
     /**
@@ -101,16 +99,16 @@ public class Index {
      * clear staged content and remove the index file
      */
     public void clear(){
-        this.map=null;
-        this.repository.removeFile(indexFile);
+        this.map=null;//Although it had better delete the blobs...
+        io.deleteFile(indexPath);
     }
 
     private void retrieveIndex(){
-        if (!this.indexFile.exists()){
+        if (!io.exists(indexPath)){
             this.map=new TreeMap<>();
             return;
         }
-        map=Utils.readObject(indexFile,TreeMap.class);
+        map=io.deserialize(io.read(indexPath),TreeMap.class);
     }
 
     /**
@@ -118,35 +116,17 @@ public class Index {
      * Call it after any modification to the index.
      */
     private void saveIndex(){
-        byte[] content= Utils.serialize(this.map);
-        repository.writeBlob(this.indexFile,content);
+        byte[] content= io.serialize(this.map);
+        io.writeToFile(content,indexPath);
     }
-
-    /**
-     * Stage the given file in the working directory and
-     * update the mapping of the index
-     * @param file file path
-     */
-    /*
-    private void stageFile(File file,String fileName){
-        if (file==null||!file.exists()){
-            return;
-        }
-        byte[] content=Utils.readContents(file);
-        String sha1=Utils.sha1(content);
-        this.stageFile(fileName,sha1,content);
-    }*/
 
     /**
      * Stage the given blob of the file in the working directory and
      * update the mapping of the index
      * @param fileName file name
-     * @param sha1 sha1 of the file
-     * @param blob the serialized file content
      */
-    private void stageFile(String fileName,String sha1,byte[] blob){
-        File blobPath=Utils.join(repository.getObjectsDirectory(),sha1);
-        this.repository.writeBlob(blobPath,blob);
+    private void stageFile(String fileName){
+        String sha1= io.writeBlob(fileName);
 
         String previousSha1= map.put(fileName,sha1);
         saveIndex();
@@ -154,9 +134,7 @@ public class Index {
         if (previousSha1==null|| previousSha1.isEmpty()){
             return;
         }
-        File discardBlob=Utils.join
-                (repository.getObjectsDirectory(),previousSha1);
-        this.repository.removeFile(discardBlob);
+        io.deleteBlob(sha1);
     }
 
     /**
@@ -176,10 +154,7 @@ public class Index {
         if (sha1.isBlank()){
             return sha1;
         }
-        File removedFile=repository.getObjectsDirectory();
-        removedFile=Utils.join(removedFile,sha1);
-        repository.removeFile(removedFile);//just delete it immediately for simplicity
-
+        io.deleteBlob(sha1);//just delete it immediately for simplicity
         return sha1;
     }
 }

@@ -25,10 +25,24 @@ public class RepositoryIO {
      */
     private static final int ABBREVIATED_SHA1_LENGTH=7;
 
+    /**
+     * The .gitlet directory.
+     * */
     private final Path gitletDirectory;
+    /**
+     * The directory that user store his files.
+     */
     private final Path workingDirectory;
+    /**
+     * The directory objects/ that stores all objects, including blobs and commits.
+     */
     private final Path objectsDirectory;
+    /**
+     * The directory objects/commits that stores all commits.
+     * (in order to make log command implementation easier,separate the commits from the blobs)
+     */
     private final Path commitsDirectory;
+
     public RepositoryIO(Path workingDirectory){
         this.workingDirectory=workingDirectory;
         //just hard code it...
@@ -36,18 +50,44 @@ public class RepositoryIO {
         this.objectsDirectory=joinPath(gitletDirectory,"objects");
         this.commitsDirectory=joinPath(objectsDirectory,"commits");
     }
-    public void InitDirectories(){
+
+    public void initRepository(){
         mkdir(gitletDirectory);
         mkdir(objectsDirectory);
         mkdir(commitsDirectory);
     }
 
-    /*Path*/
+    /*File and Directory*/
     public Path joinPath(String first,String... others){
         return Path.of(first,others);
     }
     public Path joinPath(Path first,String... others){
         return Path.of(first.toString(),others);
+    }
+
+    /**
+     * Does the file/directory associated with the path exist?
+     * @param path path
+     * @return true if exists.
+     */
+    public boolean exists(Path path){
+        return path.toFile().exists();
+    }
+    /**
+     * Does the file in the working directory exist?
+     * @param fileName file name
+     * @return true if exists.
+     */
+    public boolean exists(String fileName){
+        return this.exists(joinPath(workingDirectory,fileName));
+    }
+
+    /**
+     * Determines whether the gitlet repository exists.
+     * @return true if existing.
+     */
+    public boolean existsRepository(){
+        return this.gitletDirectory.toFile().exists();
     }
 
     /**
@@ -95,7 +135,8 @@ public class RepositoryIO {
     }
 
     /**
-     * Read content from the src path,and save it as a blob in the repository.
+     * Read content from file in the working directory,
+     * and save it as a blob in the repository.
      * @param fileName file name in the working directory.
      * @return sha1 of the blob
      */
@@ -127,10 +168,17 @@ public class RepositoryIO {
      * @return content as byte array.
      */
     public byte[] read(Path src){
-        //for working directory
         return Utils.readContents(src.toFile());
     }
 
+    /**
+     * Read content from file in the working directory
+     * @param fileName file name in the working directory
+     * @return content as byte array
+     */
+    public byte[] read(String fileName){
+        return this.read(joinPath(this.workingDirectory,fileName));
+    }
     /**
      * Get the content as byte array of the blob
      * @param sha1 blob sha1
@@ -184,6 +232,18 @@ public class RepositoryIO {
             return false;
         }
         return file.delete();
+    }
+    /**
+     * Remove a blob from the repository
+     * @param sha1 full sha1 of the blob
+     * @return true if the blob is deleted
+     */
+    public boolean deleteBlob(String sha1){
+        Path blobDir=this.joinPath(objectsDirectory,sha1.substring(0,SHA1_DIR_NAME_LENGTH));
+        Path blob=this.joinPath(blobDir,sha1.substring(SHA1_DIR_NAME_LENGTH));
+        boolean succeed= this.deleteFile(blob);
+        deleteDirectory(blobDir);
+        return succeed;
     }
     /**
      * Remove an empty directory with the given path.
