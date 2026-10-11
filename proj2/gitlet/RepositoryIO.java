@@ -98,6 +98,12 @@ public class RepositoryIO {
     public String[] plainFileNamesIn(Path directory){
         return Utils.plainFilenamesIn(directory.toFile()).toArray(new String[0]);
     }
+
+    /**
+     * Get all files/directories names in the given directory
+     * @param directory directory path,shouldn't be a file path
+     * @return files/directories names in random order
+     */
     public String[] namesIn(Path directory){
         return directory.toFile().list();
     }
@@ -127,7 +133,7 @@ public class RepositoryIO {
 
     /**
      * Write the content to the given file.
-     * @param content serialized content
+     * @param content content as byte array
      * @param dstFilePath file path
      */
     public void writeToFile(byte[] content,Path dstFilePath){
@@ -145,8 +151,8 @@ public class RepositoryIO {
         return writeBlob(read(filePath));
     }
     /**
-     * Save the serialized content as a blob in the repository.
-     * @param src serialized content
+     * Save the content as a blob in the repository.
+     * @param src content as byte array
      * @return sha1 of the blob
      */
     public String writeBlob(byte[] src){
@@ -259,8 +265,12 @@ public class RepositoryIO {
         return file.delete();
     }
 
-    public Commit[] getAllCommit(){
-        return null;
+    /**
+     * Get commit iterator that iterates through all commits in random order
+     * @return commit iterator
+     */
+    public CommitIterator commitIterator(){
+        return new CommitIterator(commitsDirectory,this);
     }
 
     /**
@@ -274,14 +284,6 @@ public class RepositoryIO {
 
     /*Conversion*/
 
-    /**
-     * Return the string represented by the content
-     * @param content serialized content,should not be null
-     * @return the string represented by the content
-     */
-    public String deserialize(byte[] content){
-        return new String(content, StandardCharsets.UTF_8);
-    }
     /**
      * Return the object represented by the content
      * @param content serialized content,should not be null
@@ -311,16 +313,35 @@ public class RepositoryIO {
     }
 
     /**
+     * convert string to byte array so that it can be written/read by the repository io
+     * @param string string
+     * @return string as byte array
+     */
+    public byte[] stringToByteArray(String string){
+        return string.getBytes(StandardCharsets.UTF_8);
+    }
+    /**
+     * convert byte array to string so that it can be written/read by the repository io
+     * @param array byte array
+     * @return string represented by byte array
+     */
+    public String byteArrayToString(byte[] array){
+        return new String(array,StandardCharsets.UTF_8);
+    }
+
+    /**
      * Write the content to the repository,store it as a loosen object
      * (a file in a directory)
-     * @param content serialized content
+     * @param content content as byte array
      * @param directoryPath directory path
      * @return sha1 of the content
      */
     private String writeBlob(byte[] content,Path directoryPath){
         String sha1=sha1(content);
         Path blobDir=this.joinPath(directoryPath,sha1.substring(0,SHA1_DIR_NAME_LENGTH));
-        this.mkdir(blobDir);
+        if(!exists(blobDir)){
+            this.mkdir(blobDir);
+        }
         Path blob=this.joinPath(blobDir,sha1.substring(SHA1_DIR_NAME_LENGTH));
         Utils.writeContents(blob.toFile(), (Object) content);
         return sha1;

@@ -63,7 +63,7 @@ public class RefManager {
         this.HEADContent=branchPath.toString();
         this.HEADContent=this.HEADContent.substring
                 (this.gitletDirectory.toString().length()+1);
-        io.writeToFile(io.serialize(HEADContent),HEAD);
+        io.writeToFile(io.stringToByteArray(HEADContent),HEAD);
         return true;
     }
     /**
@@ -73,7 +73,7 @@ public class RefManager {
      */
     public void updateBranch(String branch,String sha1){
         Path branchFile=io.joinPath(this.heads,branch);
-        io.writeToFile(io.serialize(sha1),branchFile);
+        io.writeToFile(io.stringToByteArray(sha1),branchFile);
     }
     /**
      * Let CURRENT branch points to the given commit
@@ -81,7 +81,7 @@ public class RefManager {
      */
     public void updateBranch(String sha1){
         Path branchFile=io.joinPath(gitletDirectory,HEADContent);
-        io.writeToFile(io.serialize(sha1),branchFile);
+        io.writeToFile(io.stringToByteArray(sha1),branchFile);
     }
 
     /**
@@ -139,7 +139,7 @@ public class RefManager {
      */
     public String getLatestCommitSha1(){
         Path branchPath=io.joinPath(gitletDirectory,HEADContent);
-        String commitSha1=io.deserialize(io.read(branchPath));
+        String commitSha1=io.byteArrayToString(io.read(branchPath));
         return commitSha1;
     }
 
@@ -150,7 +150,7 @@ public class RefManager {
         if (!io.exists(HEAD)){
             return;
         }
-        this.HEADContent=io.deserialize(io.read(HEAD));
+        this.HEADContent=io.byteArrayToString(io.read(HEAD));
     }
 
 }

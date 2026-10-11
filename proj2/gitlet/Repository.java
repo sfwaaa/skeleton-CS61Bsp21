@@ -76,6 +76,7 @@ public class Repository {
         return io.existsRepository();
     }
 
+
     /**
      * Create a gitlet repository with a default commit.
      * If a gitlet repository has already existed here, do nothing.
@@ -114,7 +115,7 @@ public class Repository {
 
         //REALLY UGLY...
         fileSet.addAll(this.currentCommit.map.keySet());
-        fileSet.addAll(Utils.plainFilenamesIn(workingDirectory.toFile()));
+        fileSet.addAll(List.of(io.plainFileNamesIn(workingDirectory)));
         fileSet.addAll(this.stageArea.getStagedContent().keySet());
 
         String[] fileNames=fileSet.toArray(new String[0]);
@@ -122,6 +123,14 @@ public class Repository {
         return fileNames;
     }
 
+    /**
+     * Does the given file exists in the working directory?
+     * @param fileName file name
+     * @return true if existing.
+     */
+    public boolean exists(String fileName){
+        return io.exists(io.joinPath(workingDirectory,fileName));
+    }
     /**
      * remove the file in the working directory
      * @param fileName file name
@@ -284,8 +293,8 @@ public class Repository {
     }
 
     public CommitIterator commitIterator(){
-        return null;
-    }//TODO
+        return io.commitIterator();
+    }
 
 
     /*REF manipulation,including REFs in commits and branches*/
@@ -300,11 +309,14 @@ public class Repository {
     }
 
     /**
-     * Let the given branch points to the given commit,create a new branch if necessary
+     * Let the given branch points to the given commit if the branch exists
      * @param branch branch name
      * @param sha1 the sha1 of the commit
      */
     public void updateBranch(String branch,String sha1){
+        if (!refs.exists(branch)){
+            return;
+        }
         refs.updateBranch(branch,sha1);
     }
     /**
@@ -353,8 +365,8 @@ public class Repository {
         if(currentCommit==null){
             retrieveLatestCommit();
         }
-        updateBranch(branchName,this.currentCommitSha1);
-        return false;
+        refs.updateBranch(branchName,this.currentCommitSha1);
+        return true;
     }
 
     public boolean existsBranch(String branchName){
@@ -391,6 +403,7 @@ public class Repository {
 
     /**
      * Try to unstage file from the stage area
+     * if the file is currently staged for addition or deletion
      * @param fileName the name of the file in the stage area
      * @return true if unstage the file
      */
@@ -399,6 +412,16 @@ public class Repository {
     }
 
     /**
+     * Is the given file staged for deletion?
+     * @param fileName file name in the working directory
+     * @return true if it's staged for deletion,otherwise false
+     */
+    public boolean stagedForDeletion(String fileName){
+        TreeMap<String,String> stagedFiles=this.stageArea.getStagedContent();
+        String sha1= stagedFiles.get(fileName);
+        return "".equals(sha1);
+    }
+    /**
      * Clear stage area.
      * Don't call it unless you know what you're doing!
      */
@@ -406,10 +429,7 @@ public class Repository {
         this.stageArea.clear();
     }
 
-
-
     /*Private*/
-
 
     /**
      * Retrieve the latest commit of the CURRENT branch,set to member variables

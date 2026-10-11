@@ -99,7 +99,7 @@ public class Index {
      * clear staged content and remove the index file
      */
     public void clear(){
-        this.map=null;//Although it had better delete the blobs...
+        this.map=new TreeMap<>();//Although it had better delete the blobs...
         io.deleteFile(indexPath);
     }
 
@@ -138,7 +138,7 @@ public class Index {
     }
 
     /**
-     * Remove the staged file from stage area ,delete the responding blob and
+     * Remove the staged file from stage area ,delete the corresponding blob and
      * returns its sha1.
      * Do nothing if the file not staged
      * @param fileName file name of the staged file

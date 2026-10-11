@@ -24,12 +24,16 @@ public class Main {
             //System.out.println("A Gitlet version-control system " +
               //      "already exists in the current directory.");
         }
-
+        //repoManager.printStatus();
         //repoManager.add("f1.txt");
         //repoManager.add("f2.txt");
+        //repoManager.add("f3.txt");
+        //repoManager.add("f4.txt");
+        //repoManager.rm("f3.txt");
+        //repoManager.rm("f4.txt");
         //repoManager.printStatus();
-        //repoManager.commit("first commit");
-
+        //repoManager.commit("Third commit");
+        //repoManager.printStatus();
         /*
         repoManager.add("f1.txt");
         repoManager.add("f2.txt");
@@ -51,8 +55,10 @@ public class Main {
         //repoManager.add("f7.txt");
         //repoManager.add("f1.txt");
         //repoManager.printStatus();
+        //repoManager.createBranch("develop");
 
-        if (true){
+        repoManager.logAll();
+        if (true){//to make compilation succeed
             return;
         }
 
@@ -95,7 +101,6 @@ public class Main {
                     return;
                 }
                 break;
-                //
             case "rm":
                 if(!validArgs(args,repoManager,true,1)){
                     return;

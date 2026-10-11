@@ -46,6 +46,9 @@ public class RepositoryManager {
      */
     public boolean add(String fileName){
         //remember we don't deal with subdirectories.
+        if (!repository.exists(fileName)){//don't stage for deletion here
+            return false;
+        }
         repository.stage(fileName);
         return true;
     }
@@ -53,9 +56,12 @@ public class RepositoryManager {
     /**
      * Unstage the file or stage it for deletion(and delete it)
      * @param fileName file name
-     * @return True if unstaged or stage it for deletion
+     * @return True if unstaging it or staging it for deletion or it has been staged for deletion.
      */
     public boolean rm(String fileName){
+        if (repository.stagedForDeletion(fileName)){
+            return true;
+        }
         if (this.repository.tryUnstage(fileName)){
             return true;
         }
@@ -128,12 +134,10 @@ public class RepositoryManager {
      */
     public void logAll(){
         CommitIterator iterator=this.repository.commitIterator();
-        String sha1;
-        Commit commit;
+        CommitIterator.CommitSha1Pair pair=null;
         while (iterator.hasNext()){
-            sha1=iterator.nextSha1();
-            commit=iterator.next();
-            logCommit(commit,sha1);
+            pair=iterator.next();
+            logCommit(pair.commit,pair.sha1);
         }
     }
 
