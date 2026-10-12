@@ -1,6 +1,7 @@
 package gitlet;
 
-import java.io.File;
+import javax.sql.rowset.serial.SerialStruct;
+import javax.swing.*;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -122,6 +123,9 @@ public class Repository {
         Arrays.sort(fileNames);
         return fileNames;
     }
+    public String[] filesInWorkingDirectory(){
+        return this.io.plainFileNamesIn(workingDirectory);
+    }
 
     /**
      * Does the given file exists in the working directory?
@@ -198,6 +202,71 @@ public class Repository {
         return status;
     }
 
+    /**
+     * Retrieve the latest version of the file and put/overwrite it in the working directory
+     * @param fileName name of the file in the working directory
+     * @return true the file is tracked by the commit and is retrieved ,otherwise false
+     */
+    public boolean checkout(String fileName){
+        if (this.currentCommit==null){
+            retrieveLatestCommit();
+        }
+        return checkout(this.currentCommit,fileName);
+    }
+    /**
+     * Retrieve version of the file in the given commit
+     * and put/overwrite it in the working directory
+     * @param commit the given commit,should not be null
+     * @param fileName name of the file in the working directory
+     * @return true the file is tracked by the given commit and is retrieved ,otherwise false
+     */
+    public boolean checkout(Commit commit,String fileName){
+        TreeMap<String,String> trackedFiles=commit.map;
+        if (!trackedFiles.containsKey(fileName)){
+            return false;
+        }
+        byte[] blob=io.readBlob(trackedFiles.get(fileName));
+        if (blob==null){
+            return false;
+        }
+        io.writeToFile(blob,io.joinPath(workingDirectory,fileName));
+        return true;
+
+    }
+
+    /**
+     * Retrieve all files tracked in the given commit,
+     * and delete all files untracked in the given commit.
+     * CALL IT AFTER CHECKING IF THERE ARE UNTRACKED FILES
+     * SINCE THIS CALLING WOULD OVERWRITE THEM.
+     * @param targetCommit target commit to check out
+     */
+    public void checkout(Commit targetCommit){
+        if (targetCommit==null){
+            return;
+        }
+        if (currentCommit==null){
+            retrieveLatestCommit();
+        }
+        //This seems the same ugly as implementation of status command
+        HashSet<String> fileNames=new HashSet<>
+                (List.of(io.plainFileNamesIn(workingDirectory)));
+        fileNames.addAll(currentCommit.map.keySet());
+        fileNames.addAll(targetCommit.map.keySet());
+        for(String file : fileNames){
+            //tracked in the current branch but untracked in the checked-out branch
+            if(!checkout(targetCommit,file)&&currentCommit.map.containsKey(file)){
+                this.io.deleteFile(io.joinPath(workingDirectory,file));
+            }
+        }
+    }
+
+    /**
+     * Abbreviate the sha1
+     */
+    public String abbreviate(String sha1){
+        return this.io.abbreviateSha1(sha1);
+    }
     /*Commit manipulation*/
 
     /**
@@ -255,7 +324,7 @@ public class Repository {
 
     /**
      * Get the latest commit of the current branch.
-     * @return
+     * @return the current commit of the branch
      */
     public Commit getLatestCommit(){
         if (this.currentCommit !=null){
@@ -265,8 +334,18 @@ public class Repository {
         return currentCommit;
     }
     /**
+     * Get the commit that the given branch points to
+     * @return the commit,null if the branch doesn't exist
+     */
+    public Commit getLatestCommit(String branchName){
+        if (!refs.exists(branchName)){
+            return null;
+        }
+        return io.readCommit(refs.getLatestCommitSha1(branchName));
+    }
+    /**
      * Get sha1 of the latest commit of the current branch.
-     * @return
+     * @return sha1 of the commit of the current branch
      */
     public String getLatestCommitSha1(){
         if (this.currentCommit==null){
@@ -275,6 +354,23 @@ public class Repository {
         return this.currentCommitSha1;
     }
 
+    /**
+     * Return the commit with the given sha1
+     * @param abbrSha1 the abbreviated sha1
+     * @return the commit,null if not found
+     */
+    public Commit getCommitWithAbbr(String abbrSha1){
+        return io.readCommitWithAbbr(abbrSha1);
+    }
+
+    /**
+     * Get the full sha1 of the commit
+     * @param abbrCommitSha1 abbreviated sha1 of the commit
+     * @return full sha1 of the commit,null if not found
+     */
+    public String fullSha1OfCommit(String abbrCommitSha1){
+        return io.fullSha1OfCommit(abbrCommitSha1);
+    }
     /**
      * Get the specified parent of the current commit
      * @param commit commit
@@ -416,7 +512,7 @@ public class Repository {
      * @param fileName file name in the working directory
      * @return true if it's staged for deletion,otherwise false
      */
-    public boolean stagedForDeletion(String fileName){
+    public boolean isStagedForDeletion(String fileName){
         TreeMap<String,String> stagedFiles=this.stageArea.getStagedContent();
         String sha1= stagedFiles.get(fileName);
         return "".equals(sha1);
@@ -438,5 +534,4 @@ public class Repository {
         this.currentCommitSha1=refs.getLatestCommitSha1();
         this.currentCommit= io.readCommit(currentCommitSha1);
     }
-
 }

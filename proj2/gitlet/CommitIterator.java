@@ -7,12 +7,8 @@ import java.util.Iterator;
 /**
  * Iterate through all commits
  */
-public class CommitIterator implements Iterator<CommitIterator.CommitSha1Pair> {
+public class CommitIterator implements Iterator<CommitSha1Pair> {
 
-    public class CommitSha1Pair{
-        public Commit commit;
-        public String sha1;
-    }
     private Path commitsDirectory;
     private RepositoryIO io;
     private boolean done;

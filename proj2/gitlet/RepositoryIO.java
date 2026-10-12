@@ -127,7 +127,28 @@ public class RepositoryIO {
     public String abbreviateSha1(String sha1){
         return sha1.substring(0,ABBREVIATED_SHA1_LENGTH);
     }
+    //java disallow multiple return values,so I have to make this due to my immature architecture
+    public String fullSha1OfCommit(String sha1Abbr){
+        if (sha1Abbr.length()<ABBREVIATED_SHA1_LENGTH){
+            return null;
+        }
+        String resultSha1=sha1Abbr.substring(0,SHA1_DIR_NAME_LENGTH);
+        Path blobDir=this.joinPath(commitsDirectory,resultSha1);
 
+        String[] blobNames=this.namesIn(blobDir);
+        if (blobNames==null){
+            return null;
+        }
+        String sha1Prefix=sha1Abbr.substring(SHA1_DIR_NAME_LENGTH);
+        //this iteration won't take so long :P
+        for (String blobName : blobNames) {
+            if (blobName.startsWith(sha1Prefix)) {
+                resultSha1=resultSha1+blobName;
+                return resultSha1;
+            }
+        }
+        return null;
+    }
 
     /*read/write/delete*/
 
@@ -239,11 +260,13 @@ public class RepositoryIO {
         }
         return file.delete();
     }
+
     /**
      * Remove a blob from the repository
      * @param sha1 full sha1 of the blob
      * @return true if the blob is deleted
-     */
+     */ //NOTE : deleting blob shouldn't be used in gitlet.
+    @Deprecated
     public boolean deleteBlob(String sha1){
         Path blobDir=this.joinPath(objectsDirectory,sha1.substring(0,SHA1_DIR_NAME_LENGTH));
         Path blob=this.joinPath(blobDir,sha1.substring(SHA1_DIR_NAME_LENGTH));
@@ -251,6 +274,7 @@ public class RepositoryIO {
         deleteDirectory(blobDir);
         return succeed;
     }
+
     /**
      * Remove an empty directory with the given path.
      * DON'T call this unless you know what you're doing!
@@ -368,6 +392,9 @@ public class RepositoryIO {
      * @return the content,null if not found
      */
     private byte[] readBlobWithAbbr(String sha1Abbr,Path directoryPath){
+        if (sha1Abbr.length()<ABBREVIATED_SHA1_LENGTH){
+            return null;
+        }
         Path blobDir=this.joinPath(directoryPath,sha1Abbr.substring(0,SHA1_DIR_NAME_LENGTH));
 
         String[] blobNames=this.namesIn(blobDir);

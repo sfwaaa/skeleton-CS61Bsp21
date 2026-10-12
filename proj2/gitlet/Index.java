@@ -130,11 +130,13 @@ public class Index {
 
         String previousSha1= map.put(fileName,sha1);
         saveIndex();
-
+        /*
         if (previousSha1==null|| previousSha1.isEmpty()){
             return;
         }
-        io.deleteBlob(sha1);
+        //io.deleteBlob(sha1);
+        */
+
     }
 
     /**
@@ -150,11 +152,7 @@ public class Index {
         }
         String sha1= map.remove(fileName);
         saveIndex();
-
-        if (sha1.isBlank()){
-            return sha1;
-        }
-        io.deleteBlob(sha1);//just delete it immediately for simplicity
+        //io.deleteBlob(sha1);//just delete it immediately for simplicity.NO SHOULDN'T DELETE IT
         return sha1;
     }
 }

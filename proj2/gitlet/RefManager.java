@@ -134,7 +134,7 @@ public class RefManager {
 
 
     /**
-     * Get the full sha1 of the commit that branch points to
+     * Get the full sha1 of the commit that CURRENT branch points to
      * @return full sha1 of the commit
      */
     public String getLatestCommitSha1(){
@@ -142,7 +142,18 @@ public class RefManager {
         String commitSha1=io.byteArrayToString(io.read(branchPath));
         return commitSha1;
     }
-
+    /**
+     * Get the full sha1 of the commit that the given branch points to
+     * @return full sha1 of the commit,null if the branch doesn't exist
+     */
+    public String getLatestCommitSha1(String branchName){
+        Path branchPath=io.joinPath(heads,branchName);
+        if (!io.exists(branchPath)){
+            return null;
+        }
+        String commitSha1=io.byteArrayToString(io.read(branchPath));
+        return commitSha1;
+    }
     /**
      * Initialize all refs,call it only when the repo is initialized.
      */

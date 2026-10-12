@@ -27,6 +27,8 @@ public class Commit implements Serializable,Dumpable {
     public String parentSha1;
     public String secondParentSha1;/*Only consider two-branch merging*/
 
+    //in real git,commit contains the sha1 of the "tree",
+    //which stores the mapping from file name to its sha1
     /**
      * A mapping from file name to sha1.
      * note that in real git, this is responsible for "tree",

@@ -1,7 +1,6 @@
 package gitlet;
 
 
-import java.io.File;
 import java.nio.file.Path;
 import java.util.*;
 
@@ -59,7 +58,7 @@ public class RepositoryManager {
      * @return True if unstaging it or staging it for deletion or it has been staged for deletion.
      */
     public boolean rm(String fileName){
-        if (repository.stagedForDeletion(fileName)){
+        if (repository.isStagedForDeletion(fileName)){
             return true;
         }
         if (this.repository.tryUnstage(fileName)){
@@ -104,6 +103,81 @@ public class RepositoryManager {
     }
 
     /**
+     * Retrieve the latest version of the file and put/overwrite it in the working directory
+     * @param fileName name of the file in the working directory
+     * @return true the file is tracked by the commit and is retrieved ,otherwise false
+     */
+    public boolean checkout(String fileName){
+        return this.repository.checkout(fileName);
+    }
+    /**
+     * Retrieve version of the file in the given commit
+     * and put/overwrite it in the working directory
+     * @param abbrSha1 the sha1 of given commit
+     * @param fileName name of the file in the working directory
+     * @return true the file is tracked by the given commit and is retrieved ,otherwise false
+     */
+    public CheckoutFailure checkout(String abbrSha1, String fileName){
+        Commit commit=this.repository.getCommitWithAbbr(abbrSha1);
+        if (commit==null){
+            return CheckoutFailure.COMMIT_NOT_EXIST;
+        }
+        if (!this.repository.checkout(commit,fileName)){
+            return CheckoutFailure.FILE_NOT_EXIST;
+        }
+        return CheckoutFailure.SUCCEED;
+    }
+    /**
+     * Retrieve all files tracked in the given commit,
+     * delete all files untracked in the given commit
+     * and let HEAD point to the branch
+     * @param branchName the branch to check out
+     */
+    public CheckoutFailure checkoutBranch(String branchName){
+        if (this.repository.getCurrentBranch().equals(branchName)){
+            return CheckoutFailure.CHECKOUT_CURRENT_BRANCH;
+        }
+        Commit checkoutCommit=this.repository.getLatestCommit(branchName);
+        if (checkoutCommit==null){
+            return CheckoutFailure.BRANCH_NOT_EXIST;
+        }
+
+        String[] fileNames=this.repository.filesInWorkingDirectory();
+        Commit commit =this.repository.getLatestCommit();
+
+        if (!canCheckout(fileNames,commit,checkoutCommit)){
+            return CheckoutFailure.OVERWRITTEN;
+        }
+        this.repository.checkout(checkoutCommit);
+        this.repository.clearStageArea();
+        this.repository.updateHEAD(branchName);
+        return CheckoutFailure.SUCCEED;
+    }
+
+    /**
+     * Retrieve all files tracked in the given commit,
+     * delete all files untracked in the given commit
+     * and let branch pointer point to this sha1
+     * @param abbrSha1 abbreviated sha1 of the commit
+     */
+    public CheckoutFailure reset(String abbrSha1){
+        Commit checkoutCommit=this.repository.getCommitWithAbbr(abbrSha1);
+        if (checkoutCommit==null){
+            return CheckoutFailure.COMMIT_NOT_EXIST;
+        }
+        String[] fileNames=this.repository.filesInWorkingDirectory();
+        Commit commit =this.repository.getLatestCommit();
+        if (!canCheckout(fileNames,commit,checkoutCommit)){
+            return CheckoutFailure.OVERWRITTEN;
+        }
+        this.repository.checkout(checkoutCommit);
+        this.repository.clearStageArea();
+        this.repository.updateBranch(repository.fullSha1OfCommit(abbrSha1));//just test this line
+        return CheckoutFailure.SUCCEED;
+    }
+
+
+    /**
      * Make a commit to the repository
      * @param message commit message
      * @return true if there is something to be committed in the stage area
@@ -134,13 +208,26 @@ public class RepositoryManager {
      */
     public void logAll(){
         CommitIterator iterator=this.repository.commitIterator();
-        CommitIterator.CommitSha1Pair pair=null;
+        CommitSha1Pair pair=null;
         while (iterator.hasNext()){
             pair=iterator.next();
             logCommit(pair.commit,pair.sha1);
         }
     }
 
+    public boolean find(String message){
+        boolean found=false;
+        CommitIterator iterator=this.repository.commitIterator();
+        CommitSha1Pair pair=null;
+        while (iterator.hasNext()){
+            pair=iterator.next();
+            if (pair.commit.message.equals(message)){
+                System.out.println(repository.abbreviate(pair.sha1));
+                found=true;
+            }
+        }
+        return found;
+    }
     public boolean existRepository(){
         return this.repository.exists();
     }
@@ -209,5 +296,14 @@ public class RepositoryManager {
         System.out.println("Date: "+commit.getTimestamp());
         System.out.println(commit.message);
         System.out.println();
+    }
+
+    private boolean canCheckout(String[] fileNames,Commit currentCommit,Commit checkoutCommit){
+        for(String file : fileNames){
+            if (!currentCommit.map.containsKey(file)&&checkoutCommit.map.containsKey(file)){
+                return false;
+            }
+        }
+        return true;
     }
 }
