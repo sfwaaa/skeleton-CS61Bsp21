@@ -145,7 +145,7 @@ public class RepositoryManager {
         String[] fileNames=this.repository.filesInWorkingDirectory();
         Commit commit =this.repository.getLatestCommit();
 
-        if (!canCheckout(fileNames,commit,checkoutCommit)){
+        if (!canApply(fileNames,commit,checkoutCommit)){
             return CheckoutFailure.OVERWRITTEN;
         }
         this.repository.checkout(checkoutCommit);
@@ -167,13 +167,68 @@ public class RepositoryManager {
         }
         String[] fileNames=this.repository.filesInWorkingDirectory();
         Commit commit =this.repository.getLatestCommit();
-        if (!canCheckout(fileNames,commit,checkoutCommit)){
+        if (!canApply(fileNames,commit,checkoutCommit)){
             return CheckoutFailure.OVERWRITTEN;
         }
         this.repository.checkout(checkoutCommit);
         this.repository.clearStageArea();
         this.repository.updateBranch(repository.fullSha1OfCommit(abbrSha1));//just test this line
         return CheckoutFailure.SUCCEED;
+    }
+
+    /**
+     * Merge current branch with the given branch
+     * @param branchName
+     * @return
+     */
+    public MergeStatus merge(String branchName){
+        //Retrieve commits
+        if (repository.hasStagedContent()){
+            return MergeStatus.UNCOMMITTED_CHANGE_EXIST;
+        }
+        CommitSha1Pair branchPair=this.repository.getLatestCommitSha1Pair(branchName);
+        Commit branchCommit=branchPair.commit;
+        String currentBranchName=repository.getCurrentBranch();
+        if (branchCommit==null){
+            return MergeStatus.BRANCH_NOT_EXIST;
+        }
+        if (currentBranchName.equals(branchName)){
+            return MergeStatus.MERGE_ITSELF;
+        }
+        CommitSha1Pair currentPair=repository.getLatestCommitSha1Pair();
+        Commit currentCommit=currentPair.commit;
+        if(!canApply(repository.filesInWorkingDirectory(),currentCommit,branchCommit)){
+            return MergeStatus.OVERWRITTEN;
+        }
+        //check ancestor of fast-forward
+        CommitSha1Pair splitPair=this.repository.getSplitPoint(branchPair,currentPair);
+        Commit splitPoint =splitPair.commit;
+        String splitSha1=splitPair.sha1;
+        if (splitSha1.equals(branchPair.sha1)){
+            return MergeStatus.MERGE_ANCESTOR;
+        }
+        else if (splitSha1.equals(currentPair.sha1)){
+            this.fastForward(branchPair);
+            return MergeStatus.FAST_FORWARD;
+        }
+        //Merging
+        MergeStatus status=MergeStatus.SUCCEED;
+        HashSet<String> fileNames=new HashSet<>(splitPoint.map.keySet());
+        fileNames.addAll(currentCommit.map.keySet());
+        fileNames.addAll(branchCommit.map.keySet());
+        for(String fileName : fileNames){
+            if(!mergeFile(fileName,splitPoint,currentCommit,branchCommit)){
+                status=MergeStatus.CONFLICT;
+                repository.writeConflict
+                        (fileName,currentCommit.map.get(fileName),branchCommit.map.get(fileName));
+                repository.stage(fileName);
+            }
+        }
+        Commit commit=this.repository.createCommitFromIndex
+                ("Merged "+branchName+" into "+currentBranchName+".");
+        commit.secondParentSha1=branchPair.sha1;
+        commit(commit);
+        return status;
     }
 
 
@@ -187,11 +242,10 @@ public class RepositoryManager {
         if(commit==null){
             return false;
         }
-        String sha1 = this.repository.writeCommit(commit);
-        this.repository.updateBranch(sha1);
-        this.repository.clearStageArea();
+        commit(commit);
         return true;
     }
+
     public void log(){
         Commit commit=this.repository.getLatestCommit();
         String sha1=this.repository.getLatestCommitSha1();
@@ -202,7 +256,6 @@ public class RepositoryManager {
             commit=this.repository.getParentCommit(commit,0);
         }while (commit!=null);
     }
-
     /**
      * print all commits in random order
      */
@@ -214,7 +267,6 @@ public class RepositoryManager {
             logCommit(pair.commit,pair.sha1);
         }
     }
-
     public boolean find(String message){
         boolean found=false;
         CommitIterator iterator=this.repository.commitIterator();
@@ -228,6 +280,7 @@ public class RepositoryManager {
         }
         return found;
     }
+
     public boolean existRepository(){
         return this.repository.exists();
     }
@@ -291,19 +344,126 @@ public class RepositoryManager {
         System.out.println("commit "+sha1);
         if (commit.secondParentSha1!=null){
             System.out.println
-                    ("Merge: "+commit.parentSha1+" "+commit.secondParentSha1);
+                    ("Merge: "+
+                            repository.abbreviate(commit.parentSha1)+
+                            " "+
+                            repository.abbreviate(commit.secondParentSha1));
         }
         System.out.println("Date: "+commit.getTimestamp());
         System.out.println(commit.message);
         System.out.println();
     }
 
-    private boolean canCheckout(String[] fileNames,Commit currentCommit,Commit checkoutCommit){
+    private void fastForward(CommitSha1Pair targetCommitSha1Pair){
+        this.repository.checkout(targetCommitSha1Pair.commit);
+        this.repository.updateBranch(targetCommitSha1Pair.sha1);
+    }
+
+    /**
+     * Compare the file between the split point,current branch and branch.
+     * And do the proper merging operation and update stage area
+     * @return true if there is no merge conflict
+     */
+    private boolean mergeFile(String fileName,Commit splitPoint,Commit current,Commit branchCommit){
+        String splitSha1=splitPoint.map.get(fileName);
+        String currentSha1=current.map.get(fileName);
+        String branchSha1=branchCommit.map.get(fileName);
+        //empty for deletion
+        if (splitSha1==null){
+            splitSha1="";
+        }
+        if (currentSha1==null){
+            currentSha1="";
+        }
+        boolean branchDeleted=false;
+        if (branchSha1==null){
+            branchDeleted=true;
+            branchSha1="";
+        }
+        //below "modified" means update/create/delete
+        boolean currentModifiedSinceSplit=!splitSha1.equals(currentSha1);
+        boolean branchModifiedSinceSplit=!splitSha1.equals(branchSha1);
+        boolean sameModification=branchSha1.equals(currentSha1);
+        if (currentModifiedSinceSplit){
+            if (branchModifiedSinceSplit){
+                if (!sameModification){
+                    //conflict
+                    return false;
+                }
+            }
+            //else only modified in current ,do nothing
+        }
+        else {//!currentModifiedSinceSplit
+            if (branchModifiedSinceSplit){
+                if (branchDeleted){// deleted in the given branch
+                    repository.removeFile(fileName);
+                    repository.stage(fileName);//stage for deletion
+                }
+                else {//updated only in the given branch
+                    repository.checkout(branchCommit,fileName);
+                }
+            }
+            //else both no modification,do nothing
+        }
+        return true;
+        /*pseudocode,"modified" means update/create/delete
+         if "cur" modified since "sp"{
+            if "bra" modified since "sp"{
+                 if not modified equivalently{
+                    conflict
+                    }
+                 else{
+                    modified equivalently,do nothing
+                 }
+             }
+             else {
+                  do nothing
+             }
+         }
+         else{"cur" NOT modified since "sp"
+              if "bra"  modified since "sp"{
+                  if "bra" delete it{
+                      stage it for deletion
+                  }
+                  else{
+                      checkout "bra",stage it
+                  }
+             }
+             else {
+                both not modified,
+                do nothing
+             }
+         }
+
+         */
+    }
+
+    /**
+     * Check if there are some untracked files that are not present here
+     * but exist in the target commit
+     * @param fileNames all file to check
+     * @param currentCommit
+     * @param targetCommit
+     * @return true if there won't be any untracked files
+     * that would be overwritten when apply changes in the target commit
+     * to the working directory
+     */
+    private boolean canApply(String[] fileNames, Commit currentCommit, Commit targetCommit){
         for(String file : fileNames){
-            if (!currentCommit.map.containsKey(file)&&checkoutCommit.map.containsKey(file)){
+            if (!currentCommit.map.containsKey(file)&&targetCommit.map.containsKey(file)){
                 return false;
             }
         }
         return true;
+    }
+
+    private void commit(Commit commit){
+        String sha1 = this.repository.writeCommit(commit);
+        this.repository.updateBranch(sha1);
+        this.repository.clearStageArea();
+    }
+    private void commit(String message,String secondParentSha1){
+        Commit commit=this.repository.createCommitFromIndex(message);
+        commit(commit);
     }
 }

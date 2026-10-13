@@ -160,6 +160,14 @@ public class RepositoryIO {
     public void writeToFile(byte[] content,Path dstFilePath){
         Utils.writeContents(dstFilePath.toFile(), (Object) content);
     }
+    /**
+     * Write the content to the given file.
+     * @param content content as byte array or String
+     * @param dstFilePath file path
+     */
+    public void writeToFile(Path dstFilePath, Object... content){
+        Utils.writeContents(dstFilePath.toFile(),content);
+    }
 
     /**
      * Read content from file in the working directory,

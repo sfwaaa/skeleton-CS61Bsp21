@@ -102,6 +102,12 @@ public class Index {
         this.map=new TreeMap<>();//Although it had better delete the blobs...
         io.deleteFile(indexPath);
     }
+    public boolean hasStagedContent(){
+        if (this.map==null){
+            retrieveIndex();
+        }
+        return !this.map.isEmpty();
+    }
 
     private void retrieveIndex(){
         if (!io.exists(indexPath)){

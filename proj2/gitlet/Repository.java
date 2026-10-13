@@ -143,7 +143,34 @@ public class Repository {
     public boolean removeFile(String fileName){
         return this.io.deleteFile(io.joinPath(workingDirectory,fileName));
     }
-    //see 6f
+
+    /**
+     * Only write merging conflict to the given file
+     * @param fileName
+     * @param currentSha1 sha1 of the blob in the current commit,null for untracked
+     * @param otherSha1 sha1 of the blob in the current commit,null for untracked
+     */
+    public void writeConflict(String fileName,String currentSha1,String otherSha1){
+        byte[] current;
+        if (currentSha1==null){
+            current=new byte[0];
+        }
+        else {
+            current=io.readBlob(currentSha1);
+        }
+        byte[] other;
+        if (otherSha1==null){
+            other=new byte[0];
+        }
+        else {
+            other=io.readBlob(otherSha1);
+        }
+        io.writeToFile(io.joinPath(workingDirectory,fileName),
+                "<<<<<<< HEAD",System.lineSeparator(),
+                current,"=======",System.lineSeparator(),
+                other,">>>>>>>");
+    }
+
     /**
      * Get the status info of the file in the working directory
      * @param fileName file name
@@ -344,6 +371,29 @@ public class Repository {
         return io.readCommit(refs.getLatestCommitSha1(branchName));
     }
     /**
+     * Get the latest commit and its sha1 of the current branch.
+     * @return the current commit of the branch
+     */
+    public CommitSha1Pair getLatestCommitSha1Pair(){
+        if (currentCommit==null){
+            retrieveLatestCommit();
+        }
+        return new CommitSha1Pair(currentCommit,currentCommitSha1);
+    }
+    /**
+     * Get the latest commit and its sha1 of the given branch.
+     * @return the commit,null if the branch doesn't exist
+     */
+    public CommitSha1Pair getLatestCommitSha1Pair(String branchName){
+        if (!refs.exists(branchName)){
+            return null;
+        }
+        CommitSha1Pair pair=new CommitSha1Pair();
+        pair.sha1=refs.getLatestCommitSha1(branchName);
+        pair.commit= io.readCommit(pair.sha1);
+        return pair;
+    }
+    /**
      * Get sha1 of the latest commit of the current branch.
      * @return sha1 of the commit of the current branch
      */
@@ -392,6 +442,57 @@ public class Repository {
         return io.commitIterator();
     }
 
+    /**
+     * Get the split point of the two branch
+     * @param branchHead the latest branch of a branch
+     * @param otherBranchHead the latest branch of the other branch
+     * @return the split point,shouldn't be null
+     */
+    public CommitSha1Pair getSplitPoint(CommitSha1Pair branchHead,CommitSha1Pair otherBranchHead){
+        HashSet<String> sha1Marks=new HashSet<>();
+        boolean found=false;
+
+        Commit current=branchHead.commit;
+        String currentSha1=branchHead.sha1;
+
+        Commit other=otherBranchHead.commit;
+        String otherSha1=otherBranchHead.sha1;
+
+        //Traverse through the DAG parallelly
+        while (currentSha1!=null&&otherSha1!=null){
+            found=!sha1Marks.add(currentSha1);
+            if (found){
+                return new CommitSha1Pair(current,currentSha1);
+            }
+            found=!sha1Marks.add(otherSha1);
+            if (found){
+                return new CommitSha1Pair(other,otherSha1);
+            }
+            currentSha1=current.parentSha1;
+            otherSha1=other.parentSha1;
+            current=this.getParentCommit(current,0);
+            other=this.getParentCommit(other,0);
+        }
+        //finish remaining commits...
+        while (currentSha1!=null){
+            found=!sha1Marks.add(currentSha1);
+            if (found){
+                return new CommitSha1Pair(current,currentSha1);
+            }
+            currentSha1=current.parentSha1;
+            current=this.getParentCommit(current,0);
+        }
+        while (otherSha1!=null){
+            found=!sha1Marks.add(otherSha1);
+            if (found){
+                return new CommitSha1Pair(other,otherSha1);
+            }
+            otherSha1=other.parentSha1;
+            other=this.getParentCommit(other,0);
+        }
+
+        return null;
+    }
 
     /*REF manipulation,including REFs in commits and branches*/
 
@@ -525,6 +626,13 @@ public class Repository {
         this.stageArea.clear();
     }
 
+    /**
+     * Are there any staged Content
+     * @return true if there are
+     */
+    public boolean hasStagedContent(){
+        return stageArea.hasStagedContent();
+    }
     /*Private*/
 
     /**
