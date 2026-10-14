@@ -1,6 +1,5 @@
 package gitlet;
 
-import com.puppycrawl.tools.checkstyle.checks.indentation.PackageDefHandler;
 
 import java.io.*;
 import java.nio.charset.StandardCharsets;

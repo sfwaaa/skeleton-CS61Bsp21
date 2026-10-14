@@ -1,6 +1,5 @@
 package gitlet;
 
-import javax.sql.rowset.serial.SerialStruct;
 import javax.swing.*;
 import java.nio.file.Path;
 import java.util.*;
@@ -302,7 +301,10 @@ public class Repository {
      * @return the sha1 of the new commit for reference.
      */
     public String writeCommit(Commit commit){
-        return io.writeCommit(commit);
+        String sha1=io.writeCommit(commit);
+        this.currentCommit=commit;
+        this.currentCommitSha1=sha1;
+        return sha1;
     }
 
     /**

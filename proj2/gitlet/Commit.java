@@ -1,9 +1,7 @@
 package gitlet;
 
-import org.checkerframework.checker.units.qual.C;
 
 import java.io.Serializable;
-import java.lang.ref.PhantomReference;
 import java.util.Date;
 import java.util.Formatter;
 import java.util.Locale;

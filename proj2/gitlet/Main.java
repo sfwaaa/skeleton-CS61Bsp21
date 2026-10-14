@@ -16,24 +16,63 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-        //E:\csLearn\dataStructure\gitletTest
-        RepositoryManager repoManager=new RepositoryManager
-                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
-        if (!repoManager.existRepository()){
-            repoManager.Init();
-            //System.out.println("A Gitlet version-control system " +
-              //      "already exists in the current directory.");
-        }
-        //repoManager.printStatus();
-        //repoManager.add("f1.txt");
-        //repoManager.add("f2.txt");
-        //repoManager.add("f3.txt");
-        //repoManager.add("f4.txt");
-        //repoManager.rm("f3.txt");
-        //repoManager.rm("f4.txt");
-        //repoManager.printStatus();
-        //repoManager.commit("Third commit");
-        //repoManager.printStatus();
+//
+//        //E:\csLearn\dataStructure\gitletTest
+//        RepositoryManager repoManager=new RepositoryManager
+//                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
+//        if (!repoManager.existRepository()){
+//            repoManager.Init();
+//            //System.out.println("A Gitlet version-control system " +
+//              //      "already exists in the current directory.");
+//        }
+//        repoManager.add("f1.txt");
+//        repoManager.add("f2.txt");
+//        repoManager.add("f3.txt");
+//        repoManager.add("f4.txt");
+//        repoManager.commit("first commit");
+
+//        repoManager.createBranch("develop");
+//        repoManager.checkoutBranch("develop");
+//        repoManager.printStatus();
+
+//        repoManager.add("dev01.txt");
+//        repoManager.add("dev02.txt");
+//        repoManager.rm("f2.txt");
+//        repoManager.add("f1.txt");
+//        repoManager.printStatus();
+
+        //checkout(repoManager,"master");
+//        repoManager.commit("Modified in master");
+//        repoManager.log();
+//        repoManager.add("f4.txt");
+//        repoManager.add("dev01.txt");
+//        repoManager.add("dev02.txt");
+//        repoManager.printStatus();
+        //checkout(repoManager,"develop");
+
+        //repoManager.log();
+        //after merge f1= f1 in dev
+        //f2 deleted
+        //f3 remains the same
+        //f4 remains in master
+        //dev01 modified the same
+        //dev02 conflict
+
+        //merge(repoManager,"develop");
+
+
+        //NOT BELOW
+//        repoManager.printStatus();
+//        repoManager.add("f1.txt");
+//        repoManager.add("f2.txt");
+//        repoManager.add("f3.txt");
+//        repoManager.add("f4.txt");
+//        repoManager.rm("f3.txt");
+//        repoManager.rm("f4.txt");
+//        repoManager.printStatus();
+//        repoManager.commit("Third commit");
+//        repoManager.printStatus();
+
         /*
         repoManager.add("f1.txt");
         repoManager.add("f2.txt");
@@ -63,26 +102,39 @@ public class Main {
         repoManager.add("f4.txt");
         repoManager.commit("First commit");
          */
-
         /*
         repoManager.add("f2.txt");
         repoManager.add("f5.txt");
         repoManager.add("f6.txt");
         repoManager.commit("Third Commit");
          */
-
         //modify f1,f3 in cmt2(second commit) (develop now at)
         //add f2(modified) f5&f6(untracked) in cmt3(master now at)
         //repoManager.printStatus();
         //repoManager.checkoutBranch("master");
         //repoManager.checkoutBranch("master");
-        repoManager.reset("c7026adeabac40");
+        //repoManager.reset("c7026adeabac40");
+        //repoManager.add("f8");
+        //repoManager.printStatus();
         //repoManager.log();
-        if (true){//to make compilation succeed
+
+        //f3 merge conflict
+        //f2 deleted in develop
+        //f1 only modified in dev
+        //f8 added in dev but deleted in master
+
+        //repoManager.printStatus();
+        //repoManager.printStatus();
+        //repoManager.log();
+        //repoManager.merge("develop");
+
+
+        /*if (true){//to make compilation succeed
             return;
-        }
+        }*/
 
         /*Real program*/
+        RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
             System.out.println("Please enter a command.");
             return;
@@ -187,6 +239,12 @@ public class Main {
                     System.out.println("Found no commit with that message.");
                 }
                 break;
+            case "merge":
+                if (!validArgs(args,repoManager,true,1)){
+                    return;
+                }
+                merge(repoManager,args[1]);
+                break;
             default:
                 System.out.println("No command with that name exists.");
                 break;
@@ -272,6 +330,34 @@ public class Main {
             case OVERWRITTEN:
                 System.out.println("There is an untracked file in the way; " +
                         "delete it, or add and commit it first.");
+                break;
+        }
+    }
+    private static void merge(RepositoryManager manager,String branchName){
+        MergeStatus status=manager.merge(branchName);
+        switch (status){
+            case UNCOMMITTED_CHANGE_EXIST :
+                System.out.println("You have uncommitted changes.");
+                break;
+            case BRANCH_NOT_EXIST:
+                System.out.println("A branch with that name does not exist.");
+                break;
+            case MERGE_ITSELF:
+                System.out.println("Cannot merge a branch with itself.");
+                break;
+            case OVERWRITTEN:
+                System.out.println("There is an untracked file in the way; " +
+                        "delete it, or add and commit it first.");
+                break;
+            case MERGE_ANCESTOR:
+                System.out.println("Given branch is an ancestor " +
+                        "of the current branch.");
+                break;
+            case FAST_FORWARD:
+                System.out.println("Current branch fast-forwarded.");
+                break;
+            case CONFLICT:
+                System.out.println("Encountered a merge conflict.");
                 break;
         }
     }

@@ -401,6 +401,7 @@ public class RepositoryManager {
                 }
                 else {//updated only in the given branch
                     repository.checkout(branchCommit,fileName);
+                    repository.stage(fileName);
                 }
             }
             //else both no modification,do nothing
@@ -461,9 +462,5 @@ public class RepositoryManager {
         String sha1 = this.repository.writeCommit(commit);
         this.repository.updateBranch(sha1);
         this.repository.clearStageArea();
-    }
-    private void commit(String message,String secondParentSha1){
-        Commit commit=this.repository.createCommitFromIndex(message);
-        commit(commit);
     }
 }
