@@ -16,15 +16,37 @@ public class Main {
      *  <COMMAND> <OPERAND1> <OPERAND2> ... 
      */
     public static void main(String[] args) {
-//
+
 //        //E:\csLearn\dataStructure\gitletTest
 //        RepositoryManager repoManager=new RepositoryManager
-//                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
+//                (Utils.join("E:","csLearn","dataStructure","36aDebug").toPath());
 //        if (!repoManager.existRepository()){
 //            repoManager.Init();
 //            //System.out.println("A Gitlet version-control system " +
 //              //      "already exists in the current directory.");
 //        }
+        //repoManager.createBranch("B1");
+        //repoManager.createBranch("B2");
+
+        //repoManager.checkoutBranch("B1");
+        //repoManager.add("h.txt");
+        //repoManager.commit("add h.txt");
+
+//        repoManager.checkoutBranch("B2");
+//        repoManager.add("f.txt");
+//        repoManager.commit("add f.txt");
+
+        //repoManager.createBranch("C1");// only f.txt
+//        repoManager.rm("f.txt");
+//        repoManager.add("g.txt");
+//        repoManager.printStatus();
+
+        //repoManager.commit("add g.txt,rm f.txt");
+        //repoManager.checkoutBranch("B1");
+
+        //merge(repoManager,"C1");
+        //merge(repoManager,"B2");
+
 //        repoManager.add("f1.txt");
 //        repoManager.add("f2.txt");
 //        repoManager.add("f3.txt");
@@ -59,7 +81,6 @@ public class Main {
         //dev02 conflict
 
         //merge(repoManager,"develop");
-
 
         //NOT BELOW
 //        repoManager.printStatus();
@@ -128,11 +149,9 @@ public class Main {
         //repoManager.log();
         //repoManager.merge("develop");
 
-
-        /*if (true){//to make compilation succeed
-            return;
-        }*/
-
+//        if (true){//to make compilation succeed
+//            return;
+//        }
         /*Real program*/
         RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
@@ -143,7 +162,7 @@ public class Main {
         String command = args[0];//make it easy,just hard-code it
         switch(command) {
             case "init":
-                if(!validArgs(args,repoManager,false,0)){
+                if(!validRepoAndOperandCount(args,repoManager,false,0)){
                     return;
                 }
                 if (!repoManager.Init()){
@@ -152,7 +171,7 @@ public class Main {
                 }
                 break;
             case "add":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if(!repoManager.add(args[1])){
@@ -161,7 +180,7 @@ public class Main {
                 }
                 break;
             case "commit":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if (args[1].isBlank()){
@@ -174,7 +193,7 @@ public class Main {
                 }
                 break;
             case "rm":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if(!repoManager.rm(args[1])){
@@ -183,25 +202,25 @@ public class Main {
                 }
                 break;
             case "status":
-                if(!validArgs(args,repoManager,true,0)){
+                if(!validRepoAndOperandCount(args,repoManager,true,0)){
                     return;
                 }
                 repoManager.printStatus();
                 break;
             case "log":
-                if(!validArgs(args,repoManager,true,0)){
+                if(!validRepoAndOperandCount(args,repoManager,true,0)){
                     return;
                 }
                 repoManager.log();
                 break;
             case "global-log":
-                if(!validArgs(args,repoManager,true,0)){
+                if(!validRepoAndOperandCount(args,repoManager,true,0)){
                     return;
                 }
                 repoManager.logAll();
                 break;
             case "branch":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if (!repoManager.createBranch(args[1])){
@@ -210,7 +229,7 @@ public class Main {
                 }
                 break;
             case "rm-branch":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if (!repoManager.existsBranch(args[1])){
@@ -226,13 +245,13 @@ public class Main {
                 checkout(args,repoManager);
                 break;
             case "reset":
-                if(!validArgs(args,repoManager,true,1)){
+                if(!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 reset(repoManager,args[1]);
                 break;
             case "find":
-                if (!validArgs(args,repoManager,true,1)){
+                if (!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 if (!repoManager.find(args[1])){
@@ -240,7 +259,7 @@ public class Main {
                 }
                 break;
             case "merge":
-                if (!validArgs(args,repoManager,true,1)){
+                if (!validRepoAndOperandCount(args,repoManager,true,1)){
                     return;
                 }
                 merge(repoManager,args[1]);
@@ -252,13 +271,13 @@ public class Main {
     }
 
     /**
-     * Check the user input
+     * Check the user input to see if the number of the operand satisfies the command
      * @param args cmd line args
      * @param requireRepo Does the command require ./gitlet?
      * @param operandCount The number of the operands that the command needs.
      * @return true if the input is correct.
      */
-    private static boolean validArgs
+    private static boolean validRepoAndOperandCount
             (String[]args, RepositoryManager manager, boolean requireRepo, int operandCount){
         if (requireRepo&&!manager.existRepository()){
             System.out.println("Not in an initialized Gitlet directory.");
@@ -285,6 +304,10 @@ public class Main {
                 }
                 break;
             case 3:
+                if (!args[2].equals("--")){
+                    System.out.println("Incorrect operands.");
+                    return;
+                }
                 checkout(manager,args[1],args[3]);
                 break;
             default:

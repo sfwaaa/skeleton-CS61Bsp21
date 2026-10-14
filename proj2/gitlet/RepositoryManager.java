@@ -187,11 +187,11 @@ public class RepositoryManager {
             return MergeStatus.UNCOMMITTED_CHANGE_EXIST;
         }
         CommitSha1Pair branchPair=this.repository.getLatestCommitSha1Pair(branchName);
-        Commit branchCommit=branchPair.commit;
-        String currentBranchName=repository.getCurrentBranch();
-        if (branchCommit==null){
+        if (branchPair==null){
             return MergeStatus.BRANCH_NOT_EXIST;
         }
+        Commit branchCommit=branchPair.commit;
+        String currentBranchName=repository.getCurrentBranch();
         if (currentBranchName.equals(branchName)){
             return MergeStatus.MERGE_ITSELF;
         }
@@ -274,7 +274,7 @@ public class RepositoryManager {
         while (iterator.hasNext()){
             pair=iterator.next();
             if (pair.commit.message.equals(message)){
-                System.out.println(repository.abbreviate(pair.sha1));
+                System.out.println(pair.sha1);
                 found=true;
             }
         }
@@ -325,7 +325,7 @@ public class RepositoryManager {
     }
 
     private void showStatusArray(String section, Collection<String> infos){
-        System.out.println("== "+section+" ==");
+        System.out.println("=== "+section+" ===");
         for(String info : infos){
             System.out.println(info);
         }

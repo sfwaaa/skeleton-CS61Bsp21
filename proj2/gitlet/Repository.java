@@ -166,8 +166,10 @@ public class Repository {
         }
         io.writeToFile(io.joinPath(workingDirectory,fileName),
                 "<<<<<<< HEAD",System.lineSeparator(),
-                current,"=======",System.lineSeparator(),
-                other,">>>>>>>");
+                current,
+                System.lineSeparator(),"=======",System.lineSeparator(),
+                other,
+                System.lineSeparator(),">>>>>>>");
     }
 
     /**
@@ -452,7 +454,6 @@ public class Repository {
      */
     public CommitSha1Pair getSplitPoint(CommitSha1Pair branchHead,CommitSha1Pair otherBranchHead){
         HashSet<String> sha1Marks=new HashSet<>();
-        boolean found=false;
 
         Commit current=branchHead.commit;
         String currentSha1=branchHead.sha1;
@@ -462,13 +463,21 @@ public class Repository {
 
         //Traverse through the DAG parallelly
         while (currentSha1!=null&&otherSha1!=null){
-            found=!sha1Marks.add(currentSha1);
-            if (found){
+            if (!sha1Marks.add(currentSha1)){
                 return new CommitSha1Pair(current,currentSha1);
             }
-            found=!sha1Marks.add(otherSha1);
-            if (found){
+            //check second parent if existing
+            if (current.secondParentSha1!=null&&!sha1Marks.add(current.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(current,1),current.secondParentSha1);
+            }
+
+            if (!sha1Marks.add(otherSha1)){
                 return new CommitSha1Pair(other,otherSha1);
+            }
+            if (other.secondParentSha1!=null&&!sha1Marks.add(other.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(other,1),other.secondParentSha1);
             }
             currentSha1=current.parentSha1;
             otherSha1=other.parentSha1;
@@ -477,17 +486,23 @@ public class Repository {
         }
         //finish remaining commits...
         while (currentSha1!=null){
-            found=!sha1Marks.add(currentSha1);
-            if (found){
+            if (!sha1Marks.add(currentSha1)){
                 return new CommitSha1Pair(current,currentSha1);
+            }
+            if (current.secondParentSha1!=null&&!sha1Marks.add(current.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(current,1),current.secondParentSha1);
             }
             currentSha1=current.parentSha1;
             current=this.getParentCommit(current,0);
         }
         while (otherSha1!=null){
-            found=!sha1Marks.add(otherSha1);
-            if (found){
+            if (!sha1Marks.add(otherSha1)){
                 return new CommitSha1Pair(other,otherSha1);
+            }
+            if (other.secondParentSha1!=null&&!sha1Marks.add(other.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(other,1),other.secondParentSha1);
             }
             otherSha1=other.parentSha1;
             other=this.getParentCommit(other,0);
