@@ -168,8 +168,7 @@ public class Repository {
                 "<<<<<<< HEAD",System.lineSeparator(),
                 current,
                 System.lineSeparator(),"=======",System.lineSeparator(),
-                other,
-                System.lineSeparator(),">>>>>>>");
+                other,">>>>>>>");
     }
 
     /**

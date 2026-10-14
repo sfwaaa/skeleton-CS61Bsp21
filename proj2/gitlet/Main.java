@@ -17,14 +17,43 @@ public class Main {
      */
     public static void main(String[] args) {
 
-//        //E:\csLearn\dataStructure\gitletTest
+        //E:\csLearn\dataStructure\gitletTest
 //        RepositoryManager repoManager=new RepositoryManager
-//                (Utils.join("E:","csLearn","dataStructure","36aDebug").toPath());
+//                (Utils.join("E:","csLearn","dataStructure","34Debug").toPath());
 //        if (!repoManager.existRepository()){
 //            repoManager.Init();
 //            //System.out.println("A Gitlet version-control system " +
 //              //      "already exists in the current directory.");
 //        }
+//        repoManager.add("f.txt");
+//        repoManager.add("g.txt");
+//        repoManager.commit("two files");
+
+//        repoManager.createBranch("other");
+
+//        repoManager.add("f.txt");
+//        repoManager.rm("g.txt");
+//        repoManager.add("h.txt");
+//        repoManager.printStatus();
+//        repoManager.commit("Add h.txt, remove g.txt, and change f.txt");
+//        repoManager.log();
+
+
+        //repoManager.checkoutBranch("other");
+//        repoManager.add("f.txt");
+//        repoManager.add("k.txt");
+//        repoManager.printStatus();
+//        repoManager.commit("Add k.txt and modify f.txt");
+//        repoManager.log();
+//
+//        repoManager.checkoutBranch("master");
+//        repoManager.log();
+
+//        merge(repoManager,"other");
+
+
+
+        //NOT BELOW
         //repoManager.createBranch("B1");
         //repoManager.createBranch("B2");
 
