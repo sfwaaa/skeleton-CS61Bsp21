@@ -18,13 +18,23 @@ public class Main {
     public static void main(String[] args) {
 
         //E:\csLearn\dataStructure\gitletTest
-//        RepositoryManager repoManager=new RepositoryManager
-//                (Utils.join("E:","csLearn","dataStructure","34Debug").toPath());
-//        if (!repoManager.existRepository()){
-//            repoManager.Init();
+        RepositoryManager repoManager=new RepositoryManager
+                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
+        if (!repoManager.existRepository()){
+            repoManager.Init();
+            //System.out.println("A Gitlet version-control system " +
+              //      "already exists in the current directory.");
+        }
+
+//        RepositoryManager remoteRepo=new RepositoryManager
+//                (Utils.join("E:","csLearn",
+//                        "dataStructure","remoteGitlet").toPath());
+//        if (!remoteRepo.existRepository()){
+//            remoteRepo.Init();
 //            //System.out.println("A Gitlet version-control system " +
-//              //      "already exists in the current directory.");
+//            //      "already exists in the current directory.");
 //        }
+
 //        repoManager.add("f.txt");
 //        repoManager.add("g.txt");
 //        repoManager.commit("two files");
@@ -178,11 +188,16 @@ public class Main {
         //repoManager.log();
         //repoManager.merge("develop");
 
-//        if (true){//to make compilation succeed
-//            return;
-//        }
+//        repoManager.addRemote
+//                ("origin",
+//                        "E:/csLearn/dataStructure/remoteGitlet/.gitlet");
+
+
+        if (true){//to make compilation succeed
+            return;
+        }
         /*Real program*/
-        RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
+        //RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
             System.out.println("Please enter a command.");
             return;
@@ -292,6 +307,22 @@ public class Main {
                     return;
                 }
                 merge(repoManager,args[1]);
+                break;
+            case"add-remote":
+                if (!validRepoAndOperandCount(args,repoManager,true,2)){
+                    return;
+                }
+                if(!repoManager.addRemote(args[1],args[2])){
+                    System.out.println("A remote with that name already exists.");
+                }
+                break;
+            case"rm-remote":
+                if (!validRepoAndOperandCount(args,repoManager,true,1)){
+                    return;
+                }
+                if(!repoManager.removeRemote(args[1])){
+                    System.out.println("A remote with that name does not exist.");
+                }
                 break;
             default:
                 System.out.println("No command with that name exists.");

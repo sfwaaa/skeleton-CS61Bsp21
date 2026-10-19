@@ -309,6 +309,14 @@ public class Repository {
     }
 
     /**
+     * Push all the given commit and blobs they track to the remote
+     * @param commits local commits to push
+     * @param remote remote repository
+     */
+    public void pushCommits(Commit[] commits,Repository remote){
+        //TODO
+    }
+    /**
      * Return a new commit with the given message and current time.
      * It also contains the staged file in the stage area.
      * Its parent is the current commit.
@@ -649,8 +657,40 @@ public class Repository {
     public boolean hasStagedContent(){
         return stageArea.hasStagedContent();
     }
-    /*Private*/
 
+
+    /*Remote,which is significantly differ from real git*/
+    /**
+     * Add remote info
+     * @return true if added.
+     */
+    public boolean addRemote(String remoteName,String remotePath){
+        return refs.createRemote(remoteName,io.stringToPath(remotePath));
+    }
+
+    /**
+     * remove remote info
+     * @param remoteName
+     * @return
+     */
+    public boolean removeRemote(String remoteName){
+        return refs.removeRemote(remoteName);
+    }
+
+    /**
+     * Get the commits that exist here but don't exist in the remote
+     * @param remote remote repository
+     * @param remoteBranchName remote branch
+     * @return the future commits,
+     * null if the remote isn't in the history of the current branch
+     */
+    public Commit[] futureCommitsOf(Repository remote,String remoteBranchName){
+        return null;
+    }
+    //TODO : three things to do in push:
+    //Get commits to push,push the commits,"reset" remote
+
+    /*Private*/
     /**
      * Retrieve the latest commit of the CURRENT branch,set to member variables
      */
@@ -658,4 +698,66 @@ public class Repository {
         this.currentCommitSha1=refs.getLatestCommitSha1();
         this.currentCommit= io.readCommit(currentCommitSha1);
     }
+
+    /*
+         private CommitSha1Pair getSplitPoint(CommitSha1Pair branchHead,CommitSha1Pair otherBranchHead,Repository otherRepo){
+        HashSet<String> sha1Marks=new HashSet<>();
+
+        Commit current=branchHead.commit;
+        String currentSha1=branchHead.sha1;
+
+        Commit other=otherBranchHead.commit;
+        String otherSha1=otherBranchHead.sha1;
+
+        //Traverse through the DAG parallelly
+        while (currentSha1!=null&&otherSha1!=null){
+            if (!sha1Marks.add(currentSha1)){
+                return new CommitSha1Pair(current,currentSha1);
+            }
+            //check second parent if existing
+            if (current.secondParentSha1!=null&&!sha1Marks.add(current.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(current,1),current.secondParentSha1);
+            }
+
+            if (!sha1Marks.add(otherSha1)){
+                return new CommitSha1Pair(other,otherSha1);
+            }
+            if (other.secondParentSha1!=null&&!sha1Marks.add(other.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(other,1),other.secondParentSha1);
+            }
+            currentSha1=current.parentSha1;
+            otherSha1=other.parentSha1;
+            current=this.getParentCommit(current,0);
+            other=otherRepo.getParentCommit(other,0);
+        }
+        //finish remaining commits...
+        while (currentSha1!=null){
+            if (!sha1Marks.add(currentSha1)){
+                return new CommitSha1Pair(current,currentSha1);
+            }
+            if (current.secondParentSha1!=null&&!sha1Marks.add(current.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(current,1),current.secondParentSha1);
+            }
+            currentSha1=current.parentSha1;
+            current=this.getParentCommit(current,0);
+        }
+        while (otherSha1!=null){
+            if (!sha1Marks.add(otherSha1)){
+                return new CommitSha1Pair(other,otherSha1);
+            }
+            if (other.secondParentSha1!=null&&!sha1Marks.add(other.secondParentSha1)){
+                return new CommitSha1Pair
+                        (getParentCommit(other,1),other.secondParentSha1);
+            }
+            otherSha1=other.parentSha1;
+            other=otherRepo.getParentCommit(other,0);
+        }
+
+        return null;
+    }
+    */
+
 }

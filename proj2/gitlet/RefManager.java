@@ -3,10 +3,12 @@ package gitlet;
 import java.io.File;
 import java.nio.file.Path;
 import java.util.List;
+import java.util.TreeMap;
 
 /**
  * Manage the refs in the gitlet repository.
- * Refs includes HEAD and branches (and the possible remote refs)
+ * Refs includes HEAD and branches and remote refs
+ * (which may be managed by a new class if it's complicated enough)
  */
 public class RefManager {
     private final Path gitletDirectory;
@@ -19,6 +21,11 @@ public class RefManager {
      */
     private final Path heads;
     /**
+     * The config file that stores basic information about the repository,
+     * including remote info
+     */
+    private final Path config;
+    /**
      * The file of the pointer that points to current branch.
      */
     private Path HEAD;
@@ -29,6 +36,15 @@ public class RefManager {
      */
     private String HEADContent;
 
+    /**
+     * The directory refs/remotes that stores all remote branches
+     */
+    private Path remotes;
+    /**
+     * mapping from a remote repository name to the path of the repository
+     */
+    private TreeMap<String,String> remotePaths;
+
     private final RepositoryIO io;
 
 
@@ -38,14 +54,17 @@ public class RefManager {
         refs=io.joinPath(gitletRepository,"refs");
         heads=io.joinPath(refs,"heads");
         HEAD=io.joinPath(gitletRepository,"HEAD");
+        config=io.joinPath(gitletRepository,"config");
+        remotes=io.joinPath(refs,"remotes");
         retrieveRefs();
     }
 
     public void initRepositoryRefs(){
         io.mkdir(refs);
         io.mkdir(heads);
+        io.mkdir(remotes);
     }
-
+    /*Local*/
     public boolean exists(String branchName){
         return io.exists(io.joinPath(heads,branchName));
     }
@@ -131,8 +150,6 @@ public class RefManager {
         return io.joinPath(HEADContent).getFileName().toString();
     }
 
-
-
     /**
      * Get the full sha1 of the commit that CURRENT branch points to
      * @return full sha1 of the commit
@@ -154,6 +171,46 @@ public class RefManager {
         String commitSha1=io.byteArrayToString(io.read(branchPath));
         return commitSha1;
     }
+
+    /*Remote*/
+
+    /**
+     * Save the given remote information
+     * @param remoteName remote name
+     * @param remotePath remote repository relative/absolute path
+     * @return true if added,otherwise false
+     */
+    public boolean createRemote(String remoteName,Path remotePath){
+        if (this.remotePaths==null){
+            retrieveRemotes();
+        }
+        if (this.remotePaths.containsKey(remoteName)){
+            return false;
+        }
+        this.remotePaths.put(remoteName,remotePath.toString());
+        saveConfig();
+        io.mkdir(io.joinPath(remotes,remoteName));
+        return true;
+    }
+
+    /**
+     * Remove the given remote information
+     * @param remoteName remote name
+     * @return true if the remote deleted,otherwise false
+     */
+    public boolean removeRemote(String remoteName){
+        if (this.remotePaths==null){
+            retrieveRemotes();
+        }
+        if (!remotePaths.containsKey(remoteName)){
+            return false;
+        }
+        remotePaths.remove(remoteName);
+        saveConfig();
+        io.deleteDirectoryWithFiles(io.joinPath(remotes,remoteName));
+        return true;
+    }
+
     /**
      * Initialize all refs,call it only when the repo is initialized.
      */
@@ -162,6 +219,18 @@ public class RefManager {
             return;
         }
         this.HEADContent=io.byteArrayToString(io.read(HEAD));
+    }
+
+    private void retrieveRemotes(){
+        if (!io.exists(config))
+        {
+            this.remotePaths=new TreeMap<String,String>();
+            return;
+        }
+        this.remotePaths=io.deserialize(io.read(config),TreeMap.class);
+    }
+    private void saveConfig(){
+        this.io.writeToFile(io.serialize(remotePaths),config);
     }
 
 }

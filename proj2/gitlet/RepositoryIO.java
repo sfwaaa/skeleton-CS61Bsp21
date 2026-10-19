@@ -6,12 +6,14 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
+//Note some of the instance method should be declared as static method,
+//but you know... I'm lazy :)
 /**
- * Manage how blobs and commits are stored.
+ * Manage how blobs and commits are stored in the local repository.
  * Provide method to read/write files,
  * hide the details of interacting with file system,
  * and AVOID using Utils.java ANYWHERE ELSE.
- * All io operation should be performed vid this class
+ * All io operation of the local/remote repository should be performed vid this class
  */
 public class RepositoryIO {
     //but in this class,use Util or public method arbitrarily;
@@ -62,6 +64,14 @@ public class RepositoryIO {
     }
     public Path joinPath(Path first,String... others){
         return Path.of(first.toString(),others);
+    }
+
+    /**
+     * Convert a path string with forward slash into a path
+     */
+    public Path stringToPath(String pathString){
+        //String path=pathString.replaceAll("/",java.io.File.separator);
+        return Path.of(pathString);
     }
 
     /**
@@ -267,7 +277,6 @@ public class RepositoryIO {
         }
         return file.delete();
     }
-
     /**
      * Remove a blob from the repository
      * @param sha1 full sha1 of the blob
@@ -294,6 +303,21 @@ public class RepositoryIO {
             return false;
         }
         return file.delete();
+    }
+
+    /**
+     * Delete all files in the directory and then delete the directory if possible
+     * @param directoryPath directory path,should not be null
+     * @return true if all deleted
+     */
+    public boolean deleteDirectoryWithFiles(Path directoryPath){
+        String[] fileNames=namesIn(directoryPath);
+        Path filePath;
+        for (int i = 0; i < fileNames.length; i++) {
+            filePath=joinPath(directoryPath,fileNames[i]);
+            deleteFile(filePath);
+        }
+        return directoryPath.toFile().delete();
     }
 
     /**
@@ -359,6 +383,9 @@ public class RepositoryIO {
     public String byteArrayToString(byte[] array){
         return new String(array,StandardCharsets.UTF_8);
     }
+
+    /*remote io operation*/
+    //...
 
     /**
      * Write the content to the repository,store it as a loosen object

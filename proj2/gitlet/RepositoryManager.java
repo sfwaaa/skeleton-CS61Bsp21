@@ -200,7 +200,7 @@ public class RepositoryManager {
         if(!canApply(repository.filesInWorkingDirectory(),currentCommit,branchCommit)){
             return MergeStatus.OVERWRITTEN;
         }
-        //check ancestor of fast-forward
+        //check ancestor or fast-forward
         CommitSha1Pair splitPair=this.repository.getSplitPoint(branchPair,currentPair);
         Commit splitPoint =splitPair.commit;
         String splitSha1=splitPair.sha1;
@@ -322,6 +322,22 @@ public class RepositoryManager {
         showStatusArray("Removed Files",removed);
         showStatusArray("Modifications Not Staged For Commit",unstaged);
         showStatusArray("Untracked Files",untracked);
+    }
+
+    /**
+     * Add remote information
+     * @return false if remote name already exists
+     */
+    public boolean addRemote(String remoteName,String remotePath){
+        return repository.addRemote(remoteName,remotePath);
+    }
+    /**
+     * remove remote information
+     * @param remoteName
+     * @return false if remote name doesn't exist
+     */
+    public boolean removeRemote(String remoteName){
+        return repository.removeRemote(remoteName);
     }
 
     private void showStatusArray(String section, Collection<String> infos){
