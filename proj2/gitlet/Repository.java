@@ -135,6 +135,23 @@ public class Repository {
         return io.exists(io.joinPath(workingDirectory,fileName));
     }
     /**
+     * Does the given sha1 correspond a blob in the repository?
+     * @param fullSha1 full Sha1
+     * @return true if the blob exists
+     */
+    public boolean existsBlob(String fullSha1){
+        return this.io.existsBlob(fullSha1);
+    }
+
+    /**
+     * Write the content of the blob to the repository
+     * @param content content of the blob
+     */
+    public void writeBlobContent(byte[] content){
+        this.io.writeBlob(content);
+    }
+
+    /**
      * remove the file in the working directory
      * @param fileName file name
      * @return true if deleted
@@ -309,12 +326,20 @@ public class Repository {
     }
 
     /**
-     * Push all the given commit and blobs they track to the remote
-     * @param commits local commits to push
-     * @param remote remote repository
+     * Write all the given commit and blobs they track to the remote
+     * @param commits local commits to push,should not be null
+     * @param remote remote repository,should exist and not be null
      */
     public void pushCommits(Commit[] commits,Repository remote){
-        //TODO
+        for (int i = 0; i < commits.length; i++) {
+            //copy blobs
+            for(String blobSha1 : commits[i].map.values()){
+                if (!remote.existsBlob(blobSha1)){
+                    remote.writeBlobContent(this.io.readBlob(blobSha1));
+                }
+            }
+            remote.writeCommit(commits[i]);
+        }
     }
     /**
      * Return a new commit with the given message and current time.
@@ -360,6 +385,10 @@ public class Repository {
         return commit;
     }
 
+    public boolean existsCommit(String fullSha1){
+        return this.io.existsCommit(fullSha1);
+    }
+
     /**
      * Get the latest commit of the current branch.
      * @return the current commit of the branch
@@ -401,6 +430,19 @@ public class Repository {
         }
         CommitSha1Pair pair=new CommitSha1Pair();
         pair.sha1=refs.getLatestCommitSha1(branchName);
+        pair.commit= io.readCommit(pair.sha1);
+        return pair;
+    }
+    /**
+     * Get the latest commit and its sha1 of the given remote branch.
+     * @return the commit,null if the branch doesn't exist
+     */
+    public CommitSha1Pair getLatestCommitSha1Pair(String remoteName,String remoteBranchName){
+        CommitSha1Pair pair=new CommitSha1Pair();
+        pair.sha1=refs.getLatestCommitSha1(remoteName,remoteBranchName);
+        if (pair.sha1==null){
+            return null;
+        }
         pair.commit= io.readCommit(pair.sha1);
         return pair;
     }
@@ -541,6 +583,15 @@ public class Repository {
         refs.updateBranch(branch,sha1);
     }
     /**
+     * Let the given remote branch points to the given commit,create a new branch if necessary
+     * @param remoteName remote name
+     * @param remoteBranchName remote branch name
+     * @param sha1 the sha1 of the commit
+     */
+    public void updateBranch(String remoteName,String remoteBranchName,String sha1){
+        this.refs.updateBranch(remoteName,remoteBranchName,sha1);
+    }
+    /**
      * Let CURRENT branch points to the given commit
      * @param sha1 the sha1 of the commit
      */
@@ -667,7 +718,14 @@ public class Repository {
     public boolean addRemote(String remoteName,String remotePath){
         return refs.createRemote(remoteName,io.stringToPath(remotePath));
     }
-
+    /**
+     * Get the remote path that the remote name corresponds
+     * @param remoteName remote repository name
+     * @return the path of the repository if found,null otherwise
+     */
+    public Path getRemotePath(String remoteName){
+        return this.refs.getRemotePath(remoteName);
+    }
     /**
      * remove remote info
      * @param remoteName
@@ -678,17 +736,87 @@ public class Repository {
     }
 
     /**
+     * Get the remote path that the remote name corresponds (xxx/.gitlet)
+     * @param remoteName remote repository name
+     * @return the path of the repository if found,null otherwise
+     */
+    public Path getRemoteRepositoryPath(String remoteName){
+        return this.refs.getRemotePath(remoteName);
+    }
+    /**
      * Get the commits that exist here but don't exist in the remote
-     * @param remote remote repository
+     * @param remoteRepository remote repository,must exist
      * @param remoteBranchName remote branch
-     * @return the future commits,
+     * @return the future commits,descending by timestamp;
      * null if the remote isn't in the history of the current branch
      */
-    public Commit[] futureCommitsOf(Repository remote,String remoteBranchName){
+    public Commit[] futureCommitsOf(Repository remoteRepository,String remoteBranchName){
+        if (this.currentCommit==null){
+            retrieveLatestCommit();
+        }
+        //similar algorithm of the finding the split point
+
+        Commit current=this.currentCommit;
+        String currentSha1=this.currentCommitSha1;
+        Commit remote;
+        String remoteSha1;
+        //if the branch doesn't exist, examine remote HEAD
+        if (remoteRepository.existsBranch(remoteBranchName)){
+            CommitSha1Pair remoteLatestPair=remoteRepository.
+                    getLatestCommitSha1Pair(remoteBranchName);
+            remote=remoteLatestPair.commit;
+            remoteSha1=remoteLatestPair.sha1;
+        }
+        else{
+            remote=remoteRepository.getLatestCommit();
+            remoteSha1=remoteRepository.getLatestCommitSha1();
+        }
+        String remoteLatestSha1=remoteSha1;
+
+        String splitSha1=null;
+        ArrayList<Commit> futureCommits=new ArrayList<>();
+        HashSet<String> sha1Mark=new HashSet<>();
+        while (currentSha1!=null&&remoteSha1!=null){
+            if (!sha1Mark.add(currentSha1)){
+                splitSha1=currentSha1;
+                break;
+            }
+            if (!sha1Mark.add(remoteSha1)){
+                splitSha1=remoteSha1;
+                break;
+            }
+            futureCommits.add(current);
+
+            currentSha1=current.parentSha1;
+            current=this.getParentCommit(current,0);
+            remoteSha1=remote.parentSha1;
+            remote=remoteRepository.getParentCommit(remote,0);
+        }
+        if (splitSha1!=null){
+            if (splitSha1.equals(remoteLatestSha1)&&//avoid nothing to push
+                    !splitSha1.equals(currentCommitSha1)){
+                return futureCommits.toArray(new Commit[0]);
+            }
+            else {
+                return null;
+            }
+        }
+        //scan remaining commits in the local commits
+        while (currentSha1!=null){
+            futureCommits.add(current);
+            if (!sha1Mark.add(currentSha1)){
+                splitSha1=currentSha1;
+                break;
+            }
+            currentSha1=current.parentSha1;
+            current=this.getParentCommit(current,0);
+        }
+        if (splitSha1!=null&&splitSha1.equals(remoteLatestSha1)){
+            return futureCommits.toArray(new Commit[0]);
+        }
         return null;
     }
-    //TODO : three things to do in push:
-    //Get commits to push,push the commits,"reset" remote
+
 
     /*Private*/
     /**

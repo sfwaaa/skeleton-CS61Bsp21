@@ -6,7 +6,7 @@ import java.nio.charset.StandardCharsets;
 import java.nio.file.Path;
 import java.nio.file.Paths;
 
-//Note some of the instance method should be declared as static method,
+//Note: some of the instance method should be declared as static method,
 //but you know... I'm lazy :)
 /**
  * Manage how blobs and commits are stored in the local repository.
@@ -318,6 +318,27 @@ public class RepositoryIO {
             deleteFile(filePath);
         }
         return directoryPath.toFile().delete();
+    }
+
+    /**
+     * Determining whether the blob exists according to the full sha1
+     * @param fullSha1 FULL sha1 of the blob
+     * @return true if exists
+     */
+    public boolean existsBlob(String fullSha1){
+        return joinPath(objectsDirectory,
+                fullSha1.substring(0,2),
+                fullSha1.substring(2)).toFile().exists();
+    }
+    /**
+     * Determining whether the commit exists according to the full sha1
+     * @param fullSha1 FULL sha1 of the blob
+     * @return true if exists
+     */
+    public boolean existsCommit(String fullSha1){
+        return joinPath(commitsDirectory,
+                fullSha1.substring(0,2),
+                fullSha1.substring(2)).toFile().exists();
     }
 
     /**

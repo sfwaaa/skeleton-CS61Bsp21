@@ -1,6 +1,5 @@
 package gitlet;
 
-
 import java.nio.file.Path;
 import java.util.*;
 
@@ -172,14 +171,12 @@ public class RepositoryManager {
         }
         this.repository.checkout(checkoutCommit);
         this.repository.clearStageArea();
-        this.repository.updateBranch(repository.fullSha1OfCommit(abbrSha1));//just test this line
+        this.repository.updateBranch(repository.fullSha1OfCommit(abbrSha1));
         return CheckoutFailure.SUCCEED;
     }
 
     /**
      * Merge current branch with the given branch
-     * @param branchName
-     * @return
      */
     public MergeStatus merge(String branchName){
         //Retrieve commits
@@ -190,45 +187,22 @@ public class RepositoryManager {
         if (branchPair==null){
             return MergeStatus.BRANCH_NOT_EXIST;
         }
-        Commit branchCommit=branchPair.commit;
-        String currentBranchName=repository.getCurrentBranch();
-        if (currentBranchName.equals(branchName)){
-            return MergeStatus.MERGE_ITSELF;
+        return merge(branchPair,branchName);
+    }
+
+    /**
+     * Merge current branch with the given remote branch
+     */
+    public MergeStatus merge(String remoteName,String remoteBranchName){
+        if (repository.hasStagedContent()){
+            return MergeStatus.UNCOMMITTED_CHANGE_EXIST;
         }
-        CommitSha1Pair currentPair=repository.getLatestCommitSha1Pair();
-        Commit currentCommit=currentPair.commit;
-        if(!canApply(repository.filesInWorkingDirectory(),currentCommit,branchCommit)){
-            return MergeStatus.OVERWRITTEN;
+        CommitSha1Pair branchPair=this.repository.
+                getLatestCommitSha1Pair(remoteName,remoteBranchName);
+        if (branchPair==null){
+            return MergeStatus.BRANCH_NOT_EXIST;
         }
-        //check ancestor or fast-forward
-        CommitSha1Pair splitPair=this.repository.getSplitPoint(branchPair,currentPair);
-        Commit splitPoint =splitPair.commit;
-        String splitSha1=splitPair.sha1;
-        if (splitSha1.equals(branchPair.sha1)){
-            return MergeStatus.MERGE_ANCESTOR;
-        }
-        else if (splitSha1.equals(currentPair.sha1)){
-            this.fastForward(branchPair);
-            return MergeStatus.FAST_FORWARD;
-        }
-        //Merging
-        MergeStatus status=MergeStatus.SUCCEED;
-        HashSet<String> fileNames=new HashSet<>(splitPoint.map.keySet());
-        fileNames.addAll(currentCommit.map.keySet());
-        fileNames.addAll(branchCommit.map.keySet());
-        for(String fileName : fileNames){
-            if(!mergeFile(fileName,splitPoint,currentCommit,branchCommit)){
-                status=MergeStatus.CONFLICT;
-                repository.writeConflict
-                        (fileName,currentCommit.map.get(fileName),branchCommit.map.get(fileName));
-                repository.stage(fileName);
-            }
-        }
-        Commit commit=this.repository.createCommitFromIndex
-                ("Merged "+branchName+" into "+currentBranchName+".");
-        commit.secondParentSha1=branchPair.sha1;
-        commit(commit);
-        return status;
+        return merge(branchPair,remoteName+"/"+remoteBranchName);
     }
 
 
@@ -338,6 +312,65 @@ public class RepositoryManager {
      */
     public boolean removeRemote(String remoteName){
         return repository.removeRemote(remoteName);
+    }
+
+    /**
+     * Push the current to the remote branch(created if necessary)
+     */
+    public PushFailure push(String remoteName,String remoteBranch){
+        //three things to do in push:
+        //Get commits to push,push the commits,"reset" remote
+        Path remoteRepositoryPath=this.repository.
+                getRemoteRepositoryPath(remoteName);
+        if (remoteRepositoryPath==null){
+            return PushFailure.REMOTE_NOT_FOUND;
+        }
+        Repository remote=new Repository(remoteRepositoryPath.getParent());
+        if(!remote.exists()){
+            return PushFailure.REMOTE_NOT_FOUND;
+        }
+        Commit[] futureCommits=this.repository.
+                futureCommitsOf(remote,remoteBranch);
+        if (futureCommits==null){
+            return PushFailure.NEED_PULL;
+        }
+        this.repository.pushCommits(futureCommits,remote);
+        //fast-forward
+        if (!remote.existsBlob(remoteBranch)){
+            remote.createBranch(remoteBranch);
+        }
+        else if (remoteBranch.equals(remote.getCurrentBranch())){
+            remote.checkout(futureCommits[0]);//reset if push to the remote HEAD
+        }
+        remote.updateBranch(remoteBranch,
+                this.repository.getLatestCommitSha1());
+        return PushFailure.SUCCEED;
+    }
+
+    /**
+     * Fetch remote commit to the local repository
+     * @param remoteName
+     * @param remoteBranchName
+     * @return
+     */
+    public FetchFailure fetch(String remoteName,String remoteBranchName){
+        Path remotePath=this.repository.getRemotePath(remoteName);
+        if (remotePath==null){
+            return FetchFailure.REMOTE_NOT_FOUND;
+        }
+        Repository remote=new Repository(remotePath.getParent());
+        if (!remote.exists()){
+            return FetchFailure.REMOTE_NOT_FOUND;
+        }
+
+        Commit[] fetchedCommits=getFetchCommits(remote,remoteBranchName);
+        if (fetchedCommits==null){
+            return FetchFailure.BRANCH_NOT_EXIST;
+        }
+        remote.pushCommits(fetchedCommits,this.repository);
+        this.repository.updateBranch(remoteName,remoteBranchName,
+                remote.getLatestCommitSha1Pair(remoteBranchName).sha1);
+        return FetchFailure.SUCCEED;
     }
 
     private void showStatusArray(String section, Collection<String> infos){
@@ -478,5 +511,75 @@ public class RepositoryManager {
         String sha1 = this.repository.writeCommit(commit);
         this.repository.updateBranch(sha1);
         this.repository.clearStageArea();
+    }
+    /**
+     * Merge the current branch with the given branch commit
+     * @param branchPair branch commit sha1 pair
+     * @param branchName branch name,only used in commit message
+     */
+    private MergeStatus merge(CommitSha1Pair branchPair,String branchName){
+        Commit branchCommit=branchPair.commit;
+        String currentBranchName=repository.getCurrentBranch();
+        if (currentBranchName.equals(branchName)){
+            return MergeStatus.MERGE_ITSELF;
+        }
+        CommitSha1Pair currentPair=repository.getLatestCommitSha1Pair();
+        Commit currentCommit=currentPair.commit;
+        if(!canApply(repository.filesInWorkingDirectory(),currentCommit,branchCommit)){
+            return MergeStatus.OVERWRITTEN;
+        }
+        //check ancestor or fast-forward
+        CommitSha1Pair splitPair=this.repository.getSplitPoint(branchPair,currentPair);
+        Commit splitPoint =splitPair.commit;
+        String splitSha1=splitPair.sha1;
+        if (splitSha1.equals(branchPair.sha1)){
+            return MergeStatus.MERGE_ANCESTOR;
+        }
+        else if (splitSha1.equals(currentPair.sha1)){
+            this.fastForward(branchPair);
+            return MergeStatus.FAST_FORWARD;
+        }
+        //Merging
+        MergeStatus status=MergeStatus.SUCCEED;
+        HashSet<String> fileNames=new HashSet<>(splitPoint.map.keySet());
+        fileNames.addAll(currentCommit.map.keySet());
+        fileNames.addAll(branchCommit.map.keySet());
+        for(String fileName : fileNames){
+            if(!mergeFile(fileName,splitPoint,currentCommit,branchCommit)){
+                status=MergeStatus.CONFLICT;
+                repository.writeConflict
+                        (fileName,currentCommit.map.get(fileName),branchCommit.map.get(fileName));
+                repository.stage(fileName);
+            }
+        }
+        Commit commit=this.repository.createCommitFromIndex
+                ("Merged "+branchName+" into "+currentBranchName+".");
+        commit.secondParentSha1=branchPair.sha1;
+        commit(commit);
+        return status;
+    }
+
+    /**
+     * Get all commits that need to be fetched from the remote
+     * compared to the current repository
+     * @param remote remote repo
+     * @param remoteBranchName remote branch name
+     * @return the commits need to be fetched,descending by timestamp,
+     * null if not found
+     */
+    private Commit[] getFetchCommits(Repository remote,String remoteBranchName){
+        ArrayList<Commit> fetchedCommits=new ArrayList<>();
+        if (!remote.existsBranch(remoteBranchName)){
+            return null;
+        }
+        CommitSha1Pair pair=remote.getLatestCommitSha1Pair(remoteBranchName);
+        Commit current =pair.commit;
+        String currentSha1=pair.sha1;
+        while (!this.repository.existsCommit(currentSha1)){
+            fetchedCommits.add(current);
+            currentSha1=current.parentSha1;
+            current=remote.getParentCommit(current,0);
+        }
+        return fetchedCommits.toArray(new Commit[0]);
     }
 }

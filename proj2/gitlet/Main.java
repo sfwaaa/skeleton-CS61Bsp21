@@ -18,14 +18,14 @@ public class Main {
     public static void main(String[] args) {
 
         //E:\csLearn\dataStructure\gitletTest
-        RepositoryManager repoManager=new RepositoryManager
-                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
-        if (!repoManager.existRepository()){
-            repoManager.Init();
-            //System.out.println("A Gitlet version-control system " +
-              //      "already exists in the current directory.");
-        }
-
+//        RepositoryManager repoManager=new RepositoryManager
+//                (Utils.join("E:","csLearn","dataStructure","gitletTest").toPath());
+//        if (!repoManager.existRepository()){
+//            repoManager.Init();
+//            //System.out.println("A Gitlet version-control system " +
+//              //      "already exists in the current directory.");
+//        }
+//
 //        RepositoryManager remoteRepo=new RepositoryManager
 //                (Utils.join("E:","csLearn",
 //                        "dataStructure","remoteGitlet").toPath());
@@ -192,12 +192,26 @@ public class Main {
 //                ("origin",
 //                        "E:/csLearn/dataStructure/remoteGitlet/.gitlet");
 
+        //repoManager.push("origin","feat");
+//        repoManager.add("dev02.txt");
+//        repoManager.add("f1.txt");
+//        repoManager.rm("f3.txt");
+//        repoManager.printStatus();
 
-        if (true){//to make compilation succeed
-            return;
-        }
+        //repoManager.push("origin","feat");
+        //merge(remoteRepo,"feat");
+
+        //remoteRepo.log();
+        //repoManager.checkoutBranch("master");
+        //repoManager.log();
+
+        //pull(repoManager,"origin","master");
+
+//        if (true){//to make compilation succeed
+//            return;
+//        }
         /*Real program*/
-        //RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
+        RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
             System.out.println("Please enter a command.");
             return;
@@ -324,6 +338,24 @@ public class Main {
                     System.out.println("A remote with that name does not exist.");
                 }
                 break;
+            case"push":
+                if(!validRepoAndOperandCount(args,repoManager,true,2)){
+                    return;
+                }
+                push(repoManager,args[1],args[2]);
+                break;
+            case"fetch":
+                if(!validRepoAndOperandCount(args,repoManager,true,2)){
+                    return;
+                }
+                fetch(repoManager,args[1],args[2]);
+                break;
+            case"pull":
+                if(!validRepoAndOperandCount(args,repoManager,true,2)){
+                    return;
+                }
+                pull(repoManager,args[1],args[2]);
+                break;
             default:
                 System.out.println("No command with that name exists.");
                 break;
@@ -418,6 +450,66 @@ public class Main {
     }
     private static void merge(RepositoryManager manager,String branchName){
         MergeStatus status=manager.merge(branchName);
+        switch (status){
+            case UNCOMMITTED_CHANGE_EXIST :
+                System.out.println("You have uncommitted changes.");
+                break;
+            case BRANCH_NOT_EXIST:
+                System.out.println("A branch with that name does not exist.");
+                break;
+            case MERGE_ITSELF:
+                System.out.println("Cannot merge a branch with itself.");
+                break;
+            case OVERWRITTEN:
+                System.out.println("There is an untracked file in the way; " +
+                        "delete it, or add and commit it first.");
+                break;
+            case MERGE_ANCESTOR:
+                System.out.println("Given branch is an ancestor " +
+                        "of the current branch.");
+                break;
+            case FAST_FORWARD:
+                System.out.println("Current branch fast-forwarded.");
+                break;
+            case CONFLICT:
+                System.out.println("Encountered a merge conflict.");
+                break;
+        }
+    }
+    private static void push(RepositoryManager manager,String remoteName,String remoteBranchName){
+        PushFailure failure=manager.push(remoteName,remoteBranchName);
+        switch (failure){
+            case NEED_PULL:
+                System.out.println("Please pull down remote changes before pushing.");
+                break;
+            case REMOTE_NOT_FOUND:
+                System.out.println("Remote directory not found.");
+                break;
+        }
+    }
+    private static void fetch(RepositoryManager manager,String remoteName,String remoteBranchName){
+        FetchFailure failure=manager.fetch(remoteName,remoteBranchName);
+        switch (failure){
+            case BRANCH_NOT_EXIST:
+                System.out.println("That remote does not have that branch.");
+                break;
+            case REMOTE_NOT_FOUND:
+                System.out.println("Remote directory not found.");
+                break;
+        }
+    }
+    private static void pull(RepositoryManager manager,String remoteName,String remoteBranchName){
+        //trash code ,but I don't care...
+        FetchFailure failure=manager.fetch(remoteName,remoteBranchName);
+        switch (failure){
+            case BRANCH_NOT_EXIST:
+                System.out.println("That remote does not have that branch.");
+                return;
+            case REMOTE_NOT_FOUND:
+                System.out.println("Remote directory not found.");
+                return;
+        }
+        MergeStatus status= manager.merge(remoteName,remoteBranchName);
         switch (status){
             case UNCOMMITTED_CHANGE_EXIST :
                 System.out.println("You have uncommitted changes.");

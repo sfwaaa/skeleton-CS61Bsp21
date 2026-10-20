@@ -102,6 +102,16 @@ public class RefManager {
         Path branchFile=io.joinPath(gitletDirectory,HEADContent);
         io.writeToFile(io.stringToByteArray(sha1),branchFile);
     }
+    /**
+     * Let the given remote branch points to the given commit,create a new branch if necessary
+     * @param remoteName remote name
+     * @param remoteBranchName remote branch name
+     * @param sha1 the sha1 of the commit
+     */
+    public void updateBranch(String remoteName,String remoteBranchName,String sha1){
+        Path branchFile=io.joinPath(this.remotes,remoteName,remoteBranchName);
+        io.writeToFile(io.stringToByteArray(sha1),branchFile);
+    }
 
     /**
      * Get all existing branch name
@@ -171,6 +181,18 @@ public class RefManager {
         String commitSha1=io.byteArrayToString(io.read(branchPath));
         return commitSha1;
     }
+    /**
+     * Get the full sha1 of the commit that the given remote branch points to
+     * @return full sha1 of the commit,null if the branch doesn't exist
+     */
+    public String getLatestCommitSha1(String remote,String remoteBranchName){
+        Path branchPath=io.joinPath(remotes,remote,remoteBranchName);
+        if (!io.exists(branchPath)){
+            return null;
+        }
+        String commitSha1=io.byteArrayToString(io.read(branchPath));
+        return commitSha1;
+    }
 
     /*Remote*/
 
@@ -209,6 +231,21 @@ public class RefManager {
         saveConfig();
         io.deleteDirectoryWithFiles(io.joinPath(remotes,remoteName));
         return true;
+    }
+
+    /**
+     * Get the remote path that the remote name corresponds
+     * @param remoteName remote repository name
+     * @return the path of the repository if found,null otherwise
+     */
+    public Path getRemotePath(String remoteName){
+        if (this.remotePaths==null){
+            retrieveRemotes();
+        }
+        if (!remotePaths.containsKey(remoteName)){
+            return null;
+        }
+        return io.joinPath(remotePaths.get(remoteName));
     }
 
     /**
