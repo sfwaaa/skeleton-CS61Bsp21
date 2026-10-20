@@ -217,7 +217,6 @@ public class Main {
 //        if (true){//to make compilation succeed
 //            return;
 //        }
-        
         /*Real program*/
         RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
