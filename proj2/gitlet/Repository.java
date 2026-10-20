@@ -320,8 +320,8 @@ public class Repository {
      */
     public String writeCommit(Commit commit){
         String sha1=io.writeCommit(commit);
-        this.currentCommit=commit;
-        this.currentCommitSha1=sha1;
+        //this.currentCommit=commit;had better not set it
+        //this.currentCommitSha1=sha1;
         return sha1;
     }
 

@@ -207,9 +207,17 @@ public class Main {
 
         //pull(repoManager,"origin","master");
 
+//        remoteRepo.add("h.txt");
+//        remoteRepo.commit("add h.txt");
+
+//        repoManager.add("k.txt");
+//        repoManager.commit("add k.txt");
+
+        //pull(repoManager,"origin","master");
 //        if (true){//to make compilation succeed
 //            return;
 //        }
+        
         /*Real program*/
         RepositoryManager repoManager=new RepositoryManager(CWD.toPath());
         if (args.length==0){
