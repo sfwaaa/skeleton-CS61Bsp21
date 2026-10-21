@@ -2,6 +2,19 @@ package gitlet;
 
 
 import java.io.File;
+/*
+* SUMMARY(REFLECTION):
+* 1.The driver class is a little complex.
+*  Had better encapsulate the switch statement into a new class
+* 2.The current command error is based on enum,resulting in complexity
+* 3.This gitlet implementation doesn't support multiword branch like feat/login
+* due to the lack consideration, and now I don't have much to refactor my code :(
+* 4.The representation of the "commit" is vague.
+* The difference between the "runtime commit (info)"
+* and the "commit blob (in the file system)" should be discriminated more clearly,
+* rather than just a class commit.java
+* */
+
 
 /** Driver class for Gitlet, a subset of the Git version-control system.
  *  @author sfwaaa

@@ -11,7 +11,6 @@ import java.util.TreeMap;
  * Represents a gitlet commit object
  * that just contains what a gitlet commit should have.
  * It's immutable since created.
- *  @author TODO
  */
 public class Commit implements Serializable,Dumpable {
     /* The needed message of this Commit. */
