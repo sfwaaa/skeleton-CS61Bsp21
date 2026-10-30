@@ -3,6 +3,8 @@ package byow.Core;
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
 
+//to be frank,this class should be named as "WorldController or InputHandler ...",
+//rather than the vague name Engine
 public class Engine {
     TERenderer ter = new TERenderer();
     /* Feel free to change the width and height. */
