@@ -5,12 +5,14 @@ import byow.TileEngine.TETile;
 
 //to be frank,this class should be named as "WorldController or InputHandler ...",
 //rather than the vague name Engine
+//this class is responsible for initializing renderers, taking input and calling method.
 public class Engine {
     TERenderer ter = new TERenderer();
     /* Feel free to change the width and height. */
     public static final int WIDTH = 80;
     public static final int HEIGHT = 30;
 
+    //in the future interact interface,all behaviors should be defined in the InputSource interface...
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
