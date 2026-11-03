@@ -1,7 +1,9 @@
 package byow.World.Generation.Room;
 
 /**
- * responsible for implementing connecting
+ * responsible for implementing building and connecting
+ * Override it to support different kind of room
  */
-public class Room {
+public abstract class Room {
+
 }

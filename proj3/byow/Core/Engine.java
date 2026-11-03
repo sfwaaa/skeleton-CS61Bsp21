@@ -2,17 +2,43 @@ package byow.Core;
 
 import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
+import byow.World.*;
+import byow.World.Generation.Room.SimpleRoomBuilder;
+import byow.World.Generation.WorldGenerator;
 
 //to be frank,this class should be named as "WorldController or InputHandler ...",
 //rather than the vague name Engine
 //this class is responsible for initializing renderers, taking input and calling method.
 public class Engine {
-    TERenderer ter = new TERenderer();
-    /* Feel free to change the width and height. */
-    public static final int WIDTH = 80;
-    public static final int HEIGHT = 30;
+    /**
+     * Resolution(Canvas Size) : 1280x720 -> 80x45 tiles,
+     * x for width,y for height
+     */
+    private static final Vector2Int CANVAS_SIZE=new Vector2Int(1280,720);
+    private static final int TILE_SIZE_IN_PIXEL =16;
+    //leave some space for UI and empty space
+    private static final int PADDING_LEFT=10;//
+    private static final int PADDING_RIGHT=10;
+    private static final int PADDING_UP=2;
+    private static final int PADDING_DOWN=2;
+
+
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
+    //simple test
+    public static void main(String[] args){
+        WorldRenderer renderer=new WorldRenderer
+                (CANVAS_SIZE,TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
+        Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
+                PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
+
+        WorldGenerator generator=new WorldGenerator(new SimpleRoomBuilder(),null);
+        World world =generator.generateWorld(worldSize,1355545);//101750485
+
+        //renderer.initialize(world);
+        //renderer.renderWorld();
+    }
+
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.

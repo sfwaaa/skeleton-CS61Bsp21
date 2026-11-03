@@ -32,6 +32,7 @@ public class World {
         this.heightMax=height;
         this.emptyTile=emptyTile;
         this.tilePlane=new TETile[width][height];
+        fill(emptyTile);
     }
     /**
      * Create an empty world
@@ -44,11 +45,72 @@ public class World {
         this(size.x,size.y,emptyTile);
     }
 
-
     public int getWidth(){
         return this.widthMax;
     }
     public int getHeight(){
         return this.heightMax;
+    }
+    public boolean validPosition(Vector2Int position){
+        return  position!=null&&
+                0<=position.x && position.x<widthMax &&
+                0<=position.y && position.y<heightMax;
+    }
+    public boolean validPosition(int x,int y){
+        return  0<=x && x<widthMax &&
+                0<=y && y<heightMax;
+    }
+
+    /**
+     * return the frame to render , DON'T modify it outside!!
+     */
+    public TETile[][] getFrame(){
+        return this.tilePlane;
+    }
+
+    /**
+     * Set the tile in the position,return the previous one,null if invalid position
+     */
+    public TETile put(Vector2Int position,TETile tile){
+        if(!validPosition(position)){
+            return null;
+        }
+        TETile previous= this.tilePlane[position.x][position.y];
+        this.tilePlane[position.x][position.y]=tile;
+        return previous;
+    }
+    /**
+     *
+     * @param stride stride maybe positive(->) or negative(<-)
+     */
+    public void putRow(Vector2Int startPos,int stride,int rowCount,TETile tile){
+        if(!validPosition(startPos)){
+            return;
+        }
+        int y=startPos.y;
+        int putCount=0;
+        for(int x =startPos.x; validPosition(x,y)&&putCount<rowCount;x+=stride){
+            tilePlane[x][y]=tile;
+            putCount++;
+        }
+    }
+    public void putColumn(Vector2Int startPos,int stride,int columnCount,TETile tile){
+        if(!validPosition(startPos)){
+            return;
+        }
+        int x=startPos.x;
+        int putCount=0;
+        for (int y = startPos.y; validPosition(x,y)&& putCount<columnCount; y+=stride) {
+            tilePlane[x][y]=tile;
+            putCount++;
+        }
+    }
+
+    private void fill(TETile tile){
+        for (int x = 0; x < widthMax; x++) {
+            for (int y = 0; y < heightMax; y++) {
+                tilePlane[x][y]=tile;
+            }
+        }
     }
 }

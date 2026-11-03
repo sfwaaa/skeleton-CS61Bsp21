@@ -1,7 +1,7 @@
 package byow.World;
 
 /**
- * Int representation of the 2-dimensional vector with integer component
+ * The simple representation of the 2-dimensional vector with integer component
  */
 public class Vector2Int {
     //unit direction vectors
@@ -11,22 +11,6 @@ public class Vector2Int {
     public static final Vector2Int RIGHT =new Vector2Int(1,0);
 
     public static final Vector2Int ZERO =new Vector2Int(0,0);
-
-    public int x;
-    public int y;
-
-    /**
-     * Create a vector in origin
-     */
-    public Vector2Int(){
-        x=0;
-        y=0;
-    }
-    public Vector2Int(int x,int y){
-        this.x=x;
-        this.y=y;
-    }
-
 
     public static Vector2Int plus(Vector2Int a,Vector2Int b){
         return new Vector2Int(a.x+b.x,a.y+b.y);
@@ -43,4 +27,24 @@ public class Vector2Int {
     }
 
     //maybe times(a,b)...
+
+    public int x;
+    public int y;
+
+    /**
+     * Create a vector in origin
+     */
+    public Vector2Int(){
+        x=0;
+        y=0;
+    }
+    public Vector2Int(int x,int y){
+        this.x=x;
+        this.y=y;
+    }
+
+    @Override
+    public String toString() {
+        return "(" + x + "," + y + ")";
+    }
 }

@@ -14,7 +14,7 @@ import java.util.Random;
  */
 public class HexWorld {
 
-    //Resolution(Canvas Size) : 1920x1080 -> 80x45 tiles, leaves some space for UI and empty space
+    //Resolution(Canvas Size) : 1280x720 -> 80x45 tiles, leaves some space for UI and empty space
     private static final int MAX_WIDTH=1280;
     private static final int MAX_HEIGHT=720;
 
