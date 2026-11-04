@@ -32,7 +32,7 @@ public class Vector2Int {
     public int y;
 
     /**
-     * Create a vector in origin
+     * Create a zero vector
      */
     public Vector2Int(){
         x=0;

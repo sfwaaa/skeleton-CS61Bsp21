@@ -15,9 +15,17 @@ import java.util.Random;
  */
 public class WorldGenerator {
     //hardcoded room size,I don't know where to put them properly
-    private static final Vector2Int ROOM_SIZE_DIVISIBLE_MIN =new Vector2Int(6,6);//the double of the min room size of (3,3)
-    private static final Vector2Int ROOM_SIZE_MIN=new Vector2Int(3,3);
-    private static final Vector2Int ROOM_SIZE_MAX=new Vector2Int(10,8);
+    /**
+     * Only the boundaries whose area is between the area of ROOM_SIZE_DIVISIBLE_MIN and of ROOM_SIZE_MAX
+     * can be split.
+     * The x/y component of the ROOM_SIZE_DIVISIBLE_MIN should be >= 2*ROOM_SIZE_MIN.x/.y
+     */
+    private static final Vector2Int ROOM_SIZE_DIVISIBLE_MIN =new Vector2Int(9,9);
+    private static final Vector2Int ROOM_SIZE_MIN=new Vector2Int(4,4);
+    /**
+     * max room size ,force split when the boundary's width/height exceed ROOM_SIZE_MAX.x/.y
+     */
+    private static final Vector2Int ROOM_SIZE_MAX=new Vector2Int(12,12);
 
 
     /**
@@ -58,13 +66,18 @@ public class WorldGenerator {
      *                   instantiate it before calling the method
      */
     private void split(Random random,int bias, RoomBoundary boundary, ArrayList<RoomBoundary> split){
-        boolean canSplit= (ROOM_SIZE_DIVISIBLE_MIN.x)<=boundary.width &&
-                          (ROOM_SIZE_DIVISIBLE_MIN.y)<=boundary.height;
+        boolean exceedingMaxHeight=ROOM_SIZE_MAX.y<boundary.height;
+        boolean exceedingMaxWidth= ROOM_SIZE_MAX.x<boundary.width;
+
+        boolean canSplit= //both width&height exceed divisible room size  OR width/height exceed max room size
+                ((ROOM_SIZE_DIVISIBLE_MIN.x)<=boundary.width && (ROOM_SIZE_DIVISIBLE_MIN.y)<=boundary.height)||
+                (exceedingMaxHeight||exceedingMaxWidth);
         if (!canSplit){
             split.add(boundary);
             return;
         }
         //exceeding the max size
+        /* previous
         boolean forceSplit= (ROOM_SIZE_MAX.x)<boundary.width ||
                             (ROOM_SIZE_MAX.y)<boundary.height;
         if (forceSplit){
@@ -73,10 +86,32 @@ public class WorldGenerator {
             split(random,bias,boundaries[1], split);
             return;
         }
+        */
+
+        if (exceedingMaxHeight&&exceedingMaxWidth){//force random split
+            RoomBoundary[] boundaries=splitBoundary(boundary,random,bias);
+            split(random,bias,boundaries[0], split);
+            split(random,bias,boundaries[1], split);
+            return;
+        }
+        else if(exceedingMaxHeight){//only exceedingMaxHeight
+            RoomBoundary[] boundaries=splitBoundaryHorizontal(boundary,random,bias);
+            split(random,bias,boundaries[0], split);
+            split(random,bias,boundaries[1], split);
+            return;
+        }
+        else if(exceedingMaxWidth){//only exceedingMaxWidth
+            RoomBoundary[] boundaries=splitBoundaryVertical(boundary,random,bias);
+            split(random,bias,boundaries[0], split);
+            split(random,bias,boundaries[1], split);
+            return;
+        }
+
         //in a moderate size,the larger the boundary is,more possible to be split
-        int minRoomArea=ROOM_SIZE_DIVISIBLE_MIN.x*ROOM_SIZE_DIVISIBLE_MIN.y;
+        int minDivisibleRoomArea=ROOM_SIZE_DIVISIBLE_MIN.x*ROOM_SIZE_DIVISIBLE_MIN.y;
         int maxRoomArea=ROOM_SIZE_MAX.x*ROOM_SIZE_MAX.y;
-        boolean maySplit=RandomUtils.uniform(random,minRoomArea,maxRoomArea)<=boundary.area();
+        boolean maySplit=RandomUtils.
+                uniform(random,minDivisibleRoomArea,maxRoomArea)<=boundary.area();
 
         if (maySplit){
             RoomBoundary[] boundaries=splitBoundary(boundary,random,bias);
@@ -89,7 +124,8 @@ public class WorldGenerator {
 
 
     }
-    //determine the actual split direction,returns the split halves
+
+    //split the world either horizontally or vertically,returns the split halves
     private RoomBoundary[] splitBoundary(RoomBoundary boundary,Random random,int bias){
         //tend to split the longer
         boolean splitHorizontal=RandomUtils.
@@ -98,7 +134,7 @@ public class WorldGenerator {
             return splitBoundaryHorizontal(boundary,random,bias);
         }
         else {
-            return  splitBoundaryVertical(boundary,random,bias);
+            return splitBoundaryVertical(boundary,random,bias);
         }
     }
     private RoomBoundary[] splitBoundaryVertical(RoomBoundary boundary,Random random,int bias){
@@ -107,7 +143,7 @@ public class WorldGenerator {
 //        splitOffset=Math.max(ROOM_SIZE_DIVISIBLE_MIN.x,splitOffset);
         //clamp
         int offsetMin=Math.max( ROOM_SIZE_MIN.x, (boundary.width/2)-bias );
-        int offsetMax=Math.min( (boundary.width/2)+bias , boundary.width );
+        int offsetMax=Math.min( (boundary.width/2)+bias , boundary.width-ROOM_SIZE_MIN.x );
 
         int splitOffset=RandomUtils.uniform(random,offsetMin,offsetMax);
 
@@ -118,14 +154,15 @@ public class WorldGenerator {
 //        int randomOffset=RandomUtils.uniform(random,-bias,bias+1);
 //        int splitOffset= (boundary.height/2) +randomOffset;
 //        splitOffset=Math.max(ROOM_SIZE_DIVISIBLE_MIN.y,splitOffset);
-        //clamp
+        //clamp,leave space for min room size
         int offsetMin=Math.max( ROOM_SIZE_MIN.y, (boundary.height/2)-bias );
-        int offsetMax=Math.min( (boundary.height/2)+bias , boundary.height );
+        int offsetMax=Math.min( (boundary.height/2)+bias , boundary.height-ROOM_SIZE_MIN.y );
         int splitOffset=RandomUtils.uniform(random,offsetMin,offsetMax);
 
         RoomBoundary newBoundary=boundary.divideHorizontally(splitOffset);
         return new RoomBoundary[]{boundary,newBoundary};
     }
+
     /*
     first implementation of split()
     //simple recursive implementation

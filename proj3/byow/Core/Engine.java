@@ -15,14 +15,16 @@ public class Engine {
      * x for width,y for height
      */
     private static final Vector2Int CANVAS_SIZE=new Vector2Int(1280,720);
-    private static final int TILE_SIZE_IN_PIXEL =16;
+    private static final int TILE_SIZE_IN_PIXEL =16;//keep this 16 since TERenderer hardcodes it
     //leave some space for UI and empty space
     private static final int PADDING_LEFT=10;//
     private static final int PADDING_RIGHT=10;
     private static final int PADDING_UP=2;
     private static final int PADDING_DOWN=2;
 
-
+    //seeds for testing
+    private static final long[] TEST_SEEDS=new long[]
+            {101750485,724895794,77392579,13487979,35793599};
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
     //simple test
@@ -33,7 +35,8 @@ public class Engine {
                 PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
 
         WorldGenerator generator=new WorldGenerator(new SimpleRoomBuilder(),null);
-        World world =generator.generateWorld(worldSize,1355545);//101750485
+
+        World world =generator.generateWorld(worldSize,TEST_SEEDS[0]);
 
         //renderer.initialize(world);
         //renderer.renderWorld();
