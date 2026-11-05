@@ -10,6 +10,11 @@ public class RoomBoundary {
     public int width;
     public int height;
 
+    public RoomBoundary(){
+        this.bottomLeft=Vector2Int.ZERO;
+        this.width=0;
+        this.height=0;
+    }
     public RoomBoundary(Vector2Int bottomLeft,int width,int height){
         this.width=width;
         this.height=height;
@@ -19,7 +24,7 @@ public class RoomBoundary {
         return width*height;
     }
     /**
-     * Divide the rect and return the divided other
+     * Divide the rect and return the divided other half
      * @param widthOffset the split index related to height
      */
     public RoomBoundary divideVertically(int widthOffset){
@@ -31,7 +36,7 @@ public class RoomBoundary {
         return newBoundary;
     }
     /**
-     * Divide the rect and return the divided other
+     * Divide the rect and return the divided other half
      * @param heightOffset the split index related to width,
      *                    e.g. split width 6 with param 3 leave 3 tiles in both new boundary
      */
@@ -43,5 +48,22 @@ public class RoomBoundary {
         newBoundary.height-=heightOffset;
         newBoundary.bottomLeft.y+=heightOffset;
         return newBoundary;
+    }
+
+    /**
+     * Return a copy of a shrunk boundary of this boundary
+     * @param left left shrunk offset
+     * @param right right shrunk offset
+     * @param down down shrunk offset
+     * @param up up shrunk offset
+     * @return the shrunk boundary
+     */
+    public RoomBoundary shrink(int left,int right,int down,int up){
+        RoomBoundary shrunk=new RoomBoundary();
+        shrunk.bottomLeft=new Vector2Int
+                (this.bottomLeft.x+left,this.bottomLeft.y+down);
+        shrunk.height=this.height-down-up;
+        shrunk.width=this.width-left-right;
+        return shrunk;
     }
 }

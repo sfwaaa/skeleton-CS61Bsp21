@@ -1,10 +1,17 @@
 package byow.Core;
 
-import byow.TileEngine.TERenderer;
 import byow.TileEngine.TETile;
+import byow.TileEngine.Tileset;
 import byow.World.*;
-import byow.World.Generation.Room.SimpleRoomBuilder;
+import byow.World.Generation.Room.Builder.RoomBoundaryBuilder;
+import byow.World.Generation.Room.Builder.RoomBuilder;
+import byow.World.Generation.Room.Builder.SingleRoomBuilder;
+import byow.World.Generation.Room.CircleRoom;
+import byow.World.Generation.Room.RectangleRoom;
+import byow.World.Generation.RoomBoundary;
 import byow.World.Generation.WorldGenerator;
+
+import java.util.Random;
 
 //to be frank,this class should be named as "WorldController or InputHandler ...",
 //rather than the vague name Engine
@@ -34,12 +41,23 @@ public class Engine {
         Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
                 PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
 
-        WorldGenerator generator=new WorldGenerator(new SimpleRoomBuilder(),null);
+        SingleRoomBuilder rectRoomBuilder=
+                new SingleRoomBuilder(new RectangleRoom(), Tileset.WALL);
+        SingleRoomBuilder circleRoomBuilder=
+                new SingleRoomBuilder(new CircleRoom(), Tileset.WALL);
+        WorldGenerator generator=new WorldGenerator(circleRoomBuilder,null);
 
-        World world =generator.generateWorld(worldSize,TEST_SEEDS[0]);
+        World world =generator.generateWorld(worldSize,TEST_SEEDS[1]);
 
-        //renderer.initialize(world);
-        //renderer.renderWorld();
+        renderer.initialize(world);
+        renderer.renderWorld();
+
+//        World textWorld=new World(10,10,Tileset.NOTHING );
+//        RoomBoundary boundary=new RoomBoundary(Vector2Int.ZERO,8,8);
+//        CircleRoom room=new CircleRoom();
+//        room.initializeBoundary(textWorld,boundary,new Random());
+//        room.buildRoomTiles(Tileset.WALL);
+//        System.out.println(TETile.toString(textWorld.getFrame()));
     }
 
     /**

@@ -3,7 +3,7 @@ package byow.World.Generation;
 import byow.Core.RandomUtils;
 import byow.TileEngine.*;
 import byow.World.*;
-import byow.World.Generation.Room.*;
+import byow.World.Generation.Room.Builder.RoomBuilder;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -18,7 +18,7 @@ public class WorldGenerator {
     /**
      * Only the boundaries whose area is between the area of ROOM_SIZE_DIVISIBLE_MIN and of ROOM_SIZE_MAX
      * can be split.
-     * The x/y component of the ROOM_SIZE_DIVISIBLE_MIN should be >= 2*ROOM_SIZE_MIN.x/.y
+     * The x/y component of the ROOM_SIZE_DIVISIBLE_MIN should be > 2*ROOM_SIZE_MIN.x/.y
      */
     private static final Vector2Int ROOM_SIZE_DIVISIBLE_MIN =new Vector2Int(9,9);
     private static final Vector2Int ROOM_SIZE_MIN=new Vector2Int(4,4);
@@ -53,7 +53,7 @@ public class WorldGenerator {
         //building
         for(RoomBoundary boundary : boundaries){
             System.out.println(boundary.width+"x"+boundary.height+"rect at "+boundary.bottomLeft.toString());
-            this.roomBuilder.build(world,boundary);
+            this.roomBuilder.build(world,boundary,random);
         }
         //connecting
         return world;

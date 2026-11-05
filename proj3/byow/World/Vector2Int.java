@@ -4,11 +4,16 @@ package byow.World;
  * The simple representation of the 2-dimensional vector with integer component
  */
 public class Vector2Int {
-    //unit direction vectors
+    //direction vectors
     public static final Vector2Int UP =new Vector2Int(0,1);
     public static final Vector2Int DOWN =new Vector2Int(0,-1);
     public static final Vector2Int LEFT =new Vector2Int(-1,0);
     public static final Vector2Int RIGHT =new Vector2Int(1,0);
+
+    public static final Vector2Int UP_RIGHT =new Vector2Int(1,1);
+    public static final Vector2Int DOWN_RIGHT =new Vector2Int(1,-1);
+    public static final Vector2Int UP_LEFT =new Vector2Int(-1,1);
+    public static final Vector2Int DOWN_LEFT =new Vector2Int(-1,-1);
 
     public static final Vector2Int ZERO =new Vector2Int(0,0);
 
