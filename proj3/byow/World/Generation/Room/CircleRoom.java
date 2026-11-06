@@ -30,7 +30,7 @@ public class CircleRoom extends Room{
     }
 
     @Override
-    public Room clone() {
+    public Room getEmptyRoom() {
         return new CircleRoom();
     }
 

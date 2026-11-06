@@ -43,7 +43,7 @@ public abstract class Room {
      */
     public abstract Vector2Int minRequiredSize();
     //f**k java I have to do this to creat instance in the builder class
-    public abstract Room clone();
+    public abstract Room getEmptyRoom();
     //another possible method :
     //boolean bounded(Vector2 pos) is the pos bounded in this room?
 }

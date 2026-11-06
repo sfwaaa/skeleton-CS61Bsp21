@@ -3,7 +3,8 @@ package byow.World.Generation;
 import byow.Core.RandomUtils;
 import byow.TileEngine.*;
 import byow.World.*;
-import byow.World.Generation.Room.Builder.RoomBuilder;
+import byow.World.Generation.Room.Builder.*;
+import byow.World.Generation.Room.*;
 
 import java.util.ArrayList;
 import java.util.Random;
@@ -27,6 +28,8 @@ public class WorldGenerator {
      */
     private static final Vector2Int ROOM_SIZE_MAX=new Vector2Int(12,12);
 
+    private static final int ROOM_NUMBER_MIN=10;
+    private static final int ROOM_NUMBER_MAX=20;
 
     /**
      * The split bias ±b in splitting the room
@@ -51,10 +54,14 @@ public class WorldGenerator {
                 (Vector2Int.ZERO,world.getWidth(),world.getHeight());
         this.split(random,SPLIT_BIAS,worldBoundary,boundaries);
         //building
+        Room[] rooms = buildingRooms(world,boundaries.toArray(new RoomBoundary[0]),random,
+                ROOM_NUMBER_MIN,ROOM_NUMBER_MAX);
+        /*
         for(RoomBoundary boundary : boundaries){
             System.out.println(boundary.width+"x"+boundary.height+"rect at "+boundary.bottomLeft.toString());
             this.roomBuilder.build(world,boundary,random);
         }
+        */
         //connecting
         return world;
     }
@@ -124,7 +131,6 @@ public class WorldGenerator {
 
 
     }
-
     //split the world either horizontally or vertically,returns the split halves
     private RoomBoundary[] splitBoundary(RoomBoundary boundary,Random random,int bias){
         //tend to split the longer
@@ -162,7 +168,6 @@ public class WorldGenerator {
         RoomBoundary newBoundary=boundary.divideHorizontally(splitOffset);
         return new RoomBoundary[]{boundary,newBoundary};
     }
-
     /*
     first implementation of split()
     //simple recursive implementation
@@ -220,4 +225,47 @@ public class WorldGenerator {
         }
 
     */
+
+
+    private Room[] buildingRooms(World world,RoomBoundary[] boundaries,Random random,int countMin, int countMax){
+        RandomUtils.shuffle(random,boundaries);
+        ArrayList<Room> rooms=new ArrayList<>();
+        boolean chooseBuilding=false;
+        int currentRoomCount = 0;
+        Room newRoom=null;
+        for (int boundaryIndex = 0; boundaryIndex < boundaries.length; boundaryIndex++) {
+            //try to avoid some rooms staying so closely
+            if (checkAdjacentTile(world,boundaries[boundaryIndex])){
+                continue;
+            }
+            chooseBuilding=RandomUtils.uniform(random,countMin,countMax+1)>currentRoomCount;
+            if(!chooseBuilding){
+                continue;
+            }
+            newRoom=this.roomBuilder.build(world,boundaries[boundaryIndex],random);
+            if (newRoom!=null){
+                currentRoomCount++;
+                rooms.add(newRoom);
+                if (currentRoomCount>=countMax){
+                    break;
+                }
+            }
+        }
+        return rooms.toArray(new Room[0]);
+    }
+    //simply check whether there are some tiles around the boundary
+    private boolean checkAdjacentTile(World world,RoomBoundary boundary){
+        boolean result=false;
+        result=
+                world.existsTile(Vector2Int.plus(Vector2Int.LEFT,boundary.bottomLeft))||
+                world.existsTile(Vector2Int.plus(Vector2Int.DOWN,boundary.bottomLeft))||
+                world.existsTile(Vector2Int.plus(Vector2Int.DOWN_LEFT,boundary.bottomLeft))||
+                world.existsTile(new Vector2Int
+                        (boundary.bottomLeft.x,boundary.bottomLeft.y+ boundary.height))||
+                world.existsTile(new Vector2Int
+                        (boundary.bottomLeft.x+boundary.width,boundary.bottomLeft.y));
+        return result;
+
+    }
+
 }

@@ -46,7 +46,7 @@ public class RectangleRoom extends Room {
     }
 
     @Override
-    public Room clone() {
+    public Room getEmptyRoom() {
         return new RectangleRoom();
     }
 

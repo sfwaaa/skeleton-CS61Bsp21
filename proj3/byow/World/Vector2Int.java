@@ -48,6 +48,14 @@ public class Vector2Int {
         this.y=y;
     }
 
+    /**
+     *
+     * @return square Magnitude,may have integer overflow
+     */
+    public int sqrMagnitude(){
+        return x*x+y*y;
+    }
+
     @Override
     public String toString() {
         return "(" + x + "," + y + ")";

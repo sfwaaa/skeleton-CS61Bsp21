@@ -69,6 +69,18 @@ public class World {
     }
 
     /**
+     * check whether there is a nonempty tile in the given position
+     * the equal() is based on comparing the char of the TETile
+     * @return true if there is a nonempty tile in the given position
+     */
+    public boolean existsTile(Vector2Int position){
+        if(!validPosition(position)){
+            return false;
+        }
+        return tilePlane[position.x][position.y].character()!=emptyTile.character();
+    }
+
+    /**
      * Set the tile in the position,return the previous one,null if invalid position
      */
     public TETile put(Vector2Int position,TETile tile){

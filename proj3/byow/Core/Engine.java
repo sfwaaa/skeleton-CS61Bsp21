@@ -3,6 +3,7 @@ package byow.Core;
 import byow.TileEngine.TETile;
 import byow.TileEngine.Tileset;
 import byow.World.*;
+import byow.World.Generation.Room.Builder.RandomRoomBuilder;
 import byow.World.Generation.Room.Builder.RoomBoundaryBuilder;
 import byow.World.Generation.Room.Builder.RoomBuilder;
 import byow.World.Generation.Room.Builder.SingleRoomBuilder;
@@ -31,7 +32,7 @@ public class Engine {
 
     //seeds for testing
     private static final long[] TEST_SEEDS=new long[]
-            {101750485,724895794,77392579,13487979,35793599};
+            {101750485,724895794,77392579,13487979,35793599,27932983};
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
     //simple test
@@ -45,7 +46,9 @@ public class Engine {
                 new SingleRoomBuilder(new RectangleRoom(), Tileset.WALL);
         SingleRoomBuilder circleRoomBuilder=
                 new SingleRoomBuilder(new CircleRoom(), Tileset.WALL);
-        WorldGenerator generator=new WorldGenerator(circleRoomBuilder,null);
+        RandomRoomBuilder randomRoomBuilder=new RandomRoomBuilder
+                (new RoomBuilder[]{rectRoomBuilder,circleRoomBuilder});
+        WorldGenerator generator=new WorldGenerator(randomRoomBuilder,null);
 
         World world =generator.generateWorld(worldSize,TEST_SEEDS[1]);
 

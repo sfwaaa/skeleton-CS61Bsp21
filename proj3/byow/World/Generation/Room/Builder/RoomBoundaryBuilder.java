@@ -38,4 +38,9 @@ public class RoomBoundaryBuilder extends RoomBuilder {
         renderer.renderFrame(world.getFrame());
         return null;
     }
+
+    @Override
+    public Vector2Int minRequiredSize() {
+        return null;
+    }
 }
