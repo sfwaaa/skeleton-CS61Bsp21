@@ -2,20 +2,44 @@ package byow.World.Generation.Room;
 
 import byow.Core.RandomUtils;
 import byow.TileEngine.TETile;
+import byow.TileEngine.Tileset;
 import byow.World.Generation.RoomBoundary;
 import byow.World.Vector2Int;
+import byow.World.World;
 
+import java.util.Random;
+
+/**
+ * Only pass a single floor when initializing this room
+ */
 public class CircleRoom extends Room{
     private static final Vector2Int MIN_ROOM_SIZE =new Vector2Int(4,4);
-
+    private TETile floor;
+    @Override
+    public void initialize(World world, RoomBoundary boundary, Random random, TETile[] floors) {
+        super.initialize(world, boundary, random, floors);
+        this.floor=floors[0];
+    }
 
     @Override
-    public boolean buildRoomTiles(TETile wall) {
+    public boolean buildRoomFloor() {
         RoomBoundary trimmedBoundary=trimBoundary(this.boundary);
         if (trimmedBoundary==null){
             return false;
         }
-        putCircle(trimmedBoundary,wall);
+//        System.out.println(trimmedBoundary.width+"x"+trimmedBoundary.height+"rect at "+trimmedBoundary.bottomLeft.toString());
+//        putCircleBoundary(trimmedBoundary, Tileset.WALL);//previous implementation,can be used for debugging
+
+
+        //upper half
+        Vector2Int middleLeft=Vector2Int.plus
+                (trimmedBoundary.bottomLeft,new Vector2Int(1,trimmedBoundary.height/2));
+        putHalfCircleFloor(middleLeft,Vector2Int.UP,trimmedBoundary.width,this.floor);
+
+        //lower half
+        putHalfCircleFloor(new Vector2Int(middleLeft.x,middleLeft.y-1),
+                Vector2Int.DOWN,trimmedBoundary.width,this.floor);
+
         return true;
     }
 
@@ -64,7 +88,7 @@ public class CircleRoom extends Room{
         }
         return trimmed;
     }
-    private void putCircle(RoomBoundary boundary,TETile wall){
+    private void putCircleBoundary(RoomBoundary boundary, TETile wall){
         Vector2Int middleLeft=Vector2Int.plus
                 (boundary.bottomLeft,new Vector2Int(0,boundary.height/2));
         world.putColumn(middleLeft,-1,2,wall);
@@ -98,5 +122,19 @@ public class CircleRoom extends Room{
             downArcLeftPos=Vector2Int.plus(downArcLeftPos,Vector2Int.DOWN_RIGHT);
             offset-=2;
         }
+    }
+
+    /**
+     * @param direction either up(0,1) or down(0,-1)
+     */
+    private void putHalfCircleFloor(Vector2Int startPos,Vector2Int direction,int diameter,TETile floor){
+        Vector2Int moveOffset=Vector2Int.plus(direction,Vector2Int.RIGHT);
+        Vector2Int currentPos=startPos;
+        for (int putCount = diameter-2; putCount >0; putCount-=2) {
+            world.putRow(currentPos,1,putCount,floor);
+
+            currentPos=Vector2Int.plus(currentPos,moveOffset);
+        }
+
     }
 }

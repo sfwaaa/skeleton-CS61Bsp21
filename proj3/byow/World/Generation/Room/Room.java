@@ -15,22 +15,28 @@ public abstract class Room {
     protected RoomBoundary boundary;
     protected World world;
     protected Random random;
+    protected TETile[] floorMaterials;//used for building floor
 
     /**
      * Set the world and the boundary that the room will be built in
+     * MUST call it before calling the buildRoomFloor() method
      * @param boundary room boundary(inclusive)
+     * @param floors floor tiles used to build the room.
+     *               Should obey the derived classes' rules of passing the tiles
      */
-    public void initializeBoundary(World world,RoomBoundary boundary,Random random){
+    public void initialize(World world, RoomBoundary boundary, Random random,TETile[] floors){
         this.boundary=boundary;
         this.world=world;
         this.random=random;
+        this.floorMaterials=floors;
     }
 
+    //only putting the floor makes life easier :)
     /**
-     * put the room tiles into the room
+     * put the floor tiles into the room
      * @return true if built successfully
      */
-    public abstract boolean buildRoomTiles(TETile wall);
+    public abstract boolean buildRoomFloor();
     /**
      *
      * @param direction The direction that come from room to the outside

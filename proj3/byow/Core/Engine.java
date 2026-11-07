@@ -43,14 +43,14 @@ public class Engine {
                 PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
 
         SingleRoomBuilder rectRoomBuilder=
-                new SingleRoomBuilder(new RectangleRoom(), Tileset.WALL);
+                new SingleRoomBuilder(new RectangleRoom(),new TETile[]{Tileset.FLOOR});
         SingleRoomBuilder circleRoomBuilder=
-                new SingleRoomBuilder(new CircleRoom(), Tileset.WALL);
+                new SingleRoomBuilder(new CircleRoom(), new TETile[]{Tileset.WATER});
         RandomRoomBuilder randomRoomBuilder=new RandomRoomBuilder
                 (new RoomBuilder[]{rectRoomBuilder,circleRoomBuilder});
         WorldGenerator generator=new WorldGenerator(randomRoomBuilder,null);
 
-        World world =generator.generateWorld(worldSize,TEST_SEEDS[1]);
+        World world =generator.generateWorld(worldSize,TEST_SEEDS[3]);
 
         renderer.initialize(world);
         renderer.renderWorld();
@@ -59,7 +59,7 @@ public class Engine {
 //        RoomBoundary boundary=new RoomBoundary(Vector2Int.ZERO,8,8);
 //        CircleRoom room=new CircleRoom();
 //        room.initializeBoundary(textWorld,boundary,new Random());
-//        room.buildRoomTiles(Tileset.WALL);
+//        room.buildRoomFloor(Tileset.FLOOR);
 //        System.out.println(TETile.toString(textWorld.getFrame()));
     }
 

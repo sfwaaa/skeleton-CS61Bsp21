@@ -5,7 +5,8 @@ import byow.TileEngine.*;
 /**
  * This class represents the 2D tile world,
  * every tile operation except rendering
- * should be performed via this class
+ * should be performed via this class.
+ * Note : TETile should always stay immutable!!
  */
 public class World {
     /**

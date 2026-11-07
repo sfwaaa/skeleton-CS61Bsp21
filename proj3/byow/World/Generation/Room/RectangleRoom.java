@@ -3,35 +3,42 @@ package byow.World.Generation.Room;
 
 import byow.Core.RandomUtils;
 import byow.TileEngine.TETile;
+import byow.TileEngine.Tileset;
 import byow.World.Generation.RoomBoundary;
 import byow.World.Vector2Int;
 import byow.World.World;
 
 import java.util.Random;
 
+/**
+ * Only pass a single floor when initializing this room
+ */
 public class RectangleRoom extends Room {
     private static final Vector2Int MIN_ROOM_SIZE =new Vector2Int(3,3);
-
-    private boolean canBulid=false;
+    private TETile floor;
+    private boolean canBuild =false;
     @Override
-    public void initializeBoundary(World world, RoomBoundary boundary, Random random) {
-        super.initializeBoundary(world, boundary,random);
+    public void initialize(World world, RoomBoundary boundary, Random random,TETile[] floors) {
+        super.initialize(world, boundary,random,floors);
         if (world==null||boundary==null||
                 boundary.width<MIN_ROOM_SIZE.x||boundary.height<MIN_ROOM_SIZE.y){
-            canBulid=false;
+            canBuild =false;
         }
         else {
-            canBulid=true;
+            canBuild =true;
         }
+        this.floor=floors[0];
     }
 
     @Override
-    public boolean buildRoomTiles(TETile wall) {
-        if(!canBulid){
+    public boolean buildRoomFloor() {
+        if(!canBuild){
             return false;
         }
         RoomBoundary shrunkBoundary=randomShrink(this.boundary);
-        fillBoundary(shrunkBoundary,wall);
+
+//        putBoundary(shrunkBoundary, Tileset.WALL);//previous implementation,can be used for debugging
+        putFloor(shrunkBoundary,this.floor);
         return true;
     }
 
@@ -71,7 +78,16 @@ public class RectangleRoom extends Room {
         }
         return boundary.shrink(leftShrink,rightShrink,upShrink,downShrink);
     }
-    private void fillBoundary(RoomBoundary boundary,TETile tile){
+    private void putFloor(RoomBoundary boundary,TETile floor){
+        //put columns
+        Vector2Int bottomPos=Vector2Int.
+                plus(Vector2Int.UP_RIGHT,boundary.bottomLeft);
+        int targetX=boundary.width+boundary.bottomLeft.x-1;
+        for(;bottomPos.x<targetX;bottomPos.x++){
+            world.putColumn(bottomPos,1,boundary.height-2,floor);
+        }
+    }
+    private void putBoundary(RoomBoundary boundary, TETile tile){
         this.world.putRow(boundary.bottomLeft,1,
                 boundary.width,tile);
 

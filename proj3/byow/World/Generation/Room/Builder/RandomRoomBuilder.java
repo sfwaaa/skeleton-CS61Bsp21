@@ -36,12 +36,7 @@ public class RandomRoomBuilder extends RoomBuilder{
             }
             builderIndex= RandomUtils.uniform(random,builderIndex);
         }
-        if (room!=null){
-            return room;
-        }
-        else {
-            return builders[0].build(world,boundary,random);
-        }
+        return builders[0].build(world,boundary,random);
     }
 
     @Override

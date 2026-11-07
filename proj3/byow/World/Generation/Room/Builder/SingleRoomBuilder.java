@@ -10,20 +10,20 @@ import java.util.Random;
 
 public class SingleRoomBuilder extends RoomBuilder{
     private Room room;
-    private TETile wall;
+    private TETile[] floors;
     /**
      * Create a builder
      * @param roomObject used to create object
      */
-    public SingleRoomBuilder(Room roomObject, TETile wall){
+    public SingleRoomBuilder(Room roomObject, TETile[] floors){
         this.room=roomObject;
-        this.wall=wall;
+        this.floors = floors;
     }
     @Override
     public Room build(World world, RoomBoundary boundary, Random random){
         Room newRoom =room.getEmptyRoom();
-        newRoom.initializeBoundary(world,boundary,random);
-        if(newRoom.buildRoomTiles(wall)){
+        newRoom.initialize(world,boundary,random,floors);
+        if(newRoom.buildRoomFloor()){
             return newRoom;
         }
         else {

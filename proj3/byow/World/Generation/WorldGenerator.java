@@ -11,7 +11,7 @@ import java.util.Random;
 
 /**
  * Generating the world via three steps:
- * splitting the world,building the rooms and connecting the rooms
+ * splitting the world,building the room floors,connecting the rooms and finally building the walls
  * This is based on BSP algorithm
  */
 public class WorldGenerator {
@@ -168,6 +168,49 @@ public class WorldGenerator {
         RoomBoundary newBoundary=boundary.divideHorizontally(splitOffset);
         return new RoomBoundary[]{boundary,newBoundary};
     }
+
+    private Room[] buildingRooms(World world,RoomBoundary[] boundaries,Random random,int countMin, int countMax){
+        RandomUtils.shuffle(random,boundaries);
+        ArrayList<Room> rooms=new ArrayList<>();
+        boolean chooseBuilding=false;
+        int currentRoomCount = 0;
+        Room newRoom=null;
+        for (int boundaryIndex = 0; boundaryIndex < boundaries.length; boundaryIndex++) {
+            //try to avoid some rooms staying so closely
+            if (checkAdjacentTile(world,boundaries[boundaryIndex])){
+                continue;
+            }
+            chooseBuilding=RandomUtils.uniform(random,countMin,countMax+1)>currentRoomCount;
+            if(!chooseBuilding){
+                continue;
+            }
+            newRoom=this.roomBuilder.build(world,boundaries[boundaryIndex],random);
+            if (newRoom!=null){
+                currentRoomCount++;
+                rooms.add(newRoom);
+                if (currentRoomCount>=countMax){
+                    break;
+                }
+            }
+        }
+        return rooms.toArray(new Room[0]);
+    }
+    //simply check whether there are some tiles around the boundary
+    private boolean checkAdjacentTile(World world,RoomBoundary boundary){
+        boolean result=false;
+        result=
+                world.existsTile(Vector2Int.plus(Vector2Int.LEFT,boundary.bottomLeft))||
+                world.existsTile(Vector2Int.plus(Vector2Int.DOWN,boundary.bottomLeft))||
+                world.existsTile(Vector2Int.plus(Vector2Int.DOWN_LEFT,boundary.bottomLeft))||
+                world.existsTile(new Vector2Int
+                        (boundary.bottomLeft.x,boundary.bottomLeft.y+ boundary.height))||
+                world.existsTile(new Vector2Int
+                        (boundary.bottomLeft.x+boundary.width,boundary.bottomLeft.y));
+        return result;
+
+    }
+
+}
     /*
     first implementation of split()
     //simple recursive implementation
@@ -225,47 +268,3 @@ public class WorldGenerator {
         }
 
     */
-
-
-    private Room[] buildingRooms(World world,RoomBoundary[] boundaries,Random random,int countMin, int countMax){
-        RandomUtils.shuffle(random,boundaries);
-        ArrayList<Room> rooms=new ArrayList<>();
-        boolean chooseBuilding=false;
-        int currentRoomCount = 0;
-        Room newRoom=null;
-        for (int boundaryIndex = 0; boundaryIndex < boundaries.length; boundaryIndex++) {
-            //try to avoid some rooms staying so closely
-            if (checkAdjacentTile(world,boundaries[boundaryIndex])){
-                continue;
-            }
-            chooseBuilding=RandomUtils.uniform(random,countMin,countMax+1)>currentRoomCount;
-            if(!chooseBuilding){
-                continue;
-            }
-            newRoom=this.roomBuilder.build(world,boundaries[boundaryIndex],random);
-            if (newRoom!=null){
-                currentRoomCount++;
-                rooms.add(newRoom);
-                if (currentRoomCount>=countMax){
-                    break;
-                }
-            }
-        }
-        return rooms.toArray(new Room[0]);
-    }
-    //simply check whether there are some tiles around the boundary
-    private boolean checkAdjacentTile(World world,RoomBoundary boundary){
-        boolean result=false;
-        result=
-                world.existsTile(Vector2Int.plus(Vector2Int.LEFT,boundary.bottomLeft))||
-                world.existsTile(Vector2Int.plus(Vector2Int.DOWN,boundary.bottomLeft))||
-                world.existsTile(Vector2Int.plus(Vector2Int.DOWN_LEFT,boundary.bottomLeft))||
-                world.existsTile(new Vector2Int
-                        (boundary.bottomLeft.x,boundary.bottomLeft.y+ boundary.height))||
-                world.existsTile(new Vector2Int
-                        (boundary.bottomLeft.x+boundary.width,boundary.bottomLeft.y));
-        return result;
-
-    }
-
-}
