@@ -3,10 +3,10 @@ package byow.World;
 import byow.TileEngine.*;
 
 /**
- * This class represents the 2D tile world,
- * every tile operation except rendering
- * should be performed via this class.
- * Note : TETile should always stay immutable!!
+ * This class represents the 2D tile world with two-dimensional plane coordinate system.
+ * Every tile operation except rendering should be performed via this class.
+ * Note : TETile should always stay immutable!! Or we may need an object pool to
+ * manage the creation and destruction of tiles to avoid bugs!
  */
 public class World {
     /**
@@ -80,6 +80,90 @@ public class World {
         }
         return tilePlane[position.x][position.y].character()!=emptyTile.character();
     }
+    /**
+     * check whether there is a nonempty tile in the given position
+     * the equal() is based on comparing the char of the TETile
+     * @return true if there is a nonempty tile in the given position
+     */
+    public boolean existsTile(int x,int y){
+        if(!validPosition(x,y)){
+            return false;
+        }
+        return tilePlane[x][y].character()!=emptyTile.character();
+    }
+    /**
+     * check whether there is a nonempty tile around the given position
+     * the equal() is based on comparing the char of the TETile
+     * @return true if there is a nonempty tile
+     * in the left/right/up/down/up_left/up_right/down_left/down_right of the given position
+     */
+    public boolean existsSurroundingTiles(Vector2Int position){
+       return existsSurroundingTiles(position.x,position.y);
+    }
+    //note : this method hasn't been tested yet.
+    /**
+     * check whether there is a nonempty tile around the given position
+     * the equal() is based on comparing the char of the TETile
+     * @return true if there is a nonempty tile
+     * in the left/right/up/down/up_left/up_right/down_left/down_right of the given position
+     */
+    public boolean existsSurroundingTiles(int x,int y){
+        if (!validPosition(x,y)){
+            return false;
+        }
+        //left
+        if (existsTile(x-1,y)){
+            return true;
+        }
+        //right
+        if (existsTile(x+1,y)){
+            return true;
+        }
+        //up
+        if (existsTile(x,y+1)){
+            return true;
+        }
+        //down
+        if (existsTile(x,y-1)){
+            return true;
+        }
+        //up_left
+        if (existsTile(x-1,y+1)){
+            return true;
+        }
+        //up_right
+        if (existsTile(x+1,y+1)){
+            return true;
+        }
+        //down_left
+        if (existsTile(x-1,y-1)){
+            return true;
+        }
+        //down_right
+        if (existsTile(x+1,y-1)){
+            return true;
+        }
+        return false;
+    }
+
+    /**
+     * get the tile in the given position
+     * @return null if invalid position
+     */
+    public TETile getTile(Vector2Int position){
+        return this.getTile(position.x,position.y);
+    }
+
+    /**
+     * get the tile in the given position
+     * @return null if invalid position
+     */
+    public TETile getTile(int x,int y){
+        if (!validPosition(x,y)){
+            return null;
+        }
+        return tilePlane[x][y];
+    }
 
     /**
      * Set the tile in the position,return the previous one,null if invalid position
@@ -91,6 +175,12 @@ public class World {
         TETile previous= this.tilePlane[position.x][position.y];
         this.tilePlane[position.x][position.y]=tile;
         return previous;
+    }
+    /**
+     * Set the tile of the position to empty ,return the previous one,null if invalid position
+     */
+    public TETile clearAt(Vector2Int position){
+        return put(position,this.emptyTile);
     }
     /**
      *

@@ -13,8 +13,9 @@ import java.util.Random;
  * Only pass a single floor when initializing this room
  */
 public class CircleRoom extends Room{
-    private static final Vector2Int MIN_ROOM_SIZE =new Vector2Int(4,4);
+    private static final Vector2Int MIN_ROOM_SIZE =new Vector2Int(4,4);//should always be n*n
     private TETile floor;
+    private RoomBoundary trimmedBoundary=null;
     @Override
     public void initialize(World world, RoomBoundary boundary, Random random, TETile[] floors) {
         super.initialize(world, boundary, random, floors);
@@ -23,13 +24,14 @@ public class CircleRoom extends Room{
 
     @Override
     public boolean buildRoomFloor() {
-        RoomBoundary trimmedBoundary=trimBoundary(this.boundary);
+        trimmedBoundary=trimBoundary(this.boundary);
         if (trimmedBoundary==null){
             return false;
         }
+//        center=Vector2Int.plus(trimmedBoundary.bottomLeft,
+//                new Vector2Int(trimmedBoundary.width/2,trimmedBoundary.height/2));
 //        System.out.println(trimmedBoundary.width+"x"+trimmedBoundary.height+"rect at "+trimmedBoundary.bottomLeft.toString());
 //        putCircleBoundary(trimmedBoundary, Tileset.WALL);//previous implementation,can be used for debugging
-
 
         //upper half
         Vector2Int middleLeft=Vector2Int.plus
@@ -44,13 +46,25 @@ public class CircleRoom extends Room{
     }
 
     @Override
-    public Vector2Int buildEntrance(Vector2Int direction) {
-        return null;
+    public Vector2Int minRequiredSize() {
+        return MIN_ROOM_SIZE;
     }
 
     @Override
-    public Vector2Int minRequiredSize() {
-        return MIN_ROOM_SIZE;
+    public void trim(TETile wall) {
+        if (this.trimmedBoundary==null){
+            return;
+        }
+        trimArcs(wall);
+    }
+
+    @Override
+    public Vector2Int centerPosition() {
+        if (trimmedBoundary==null){
+            return Vector2Int.ZERO;
+        }
+        return Vector2Int.plus(trimmedBoundary.bottomLeft,
+                new Vector2Int((trimmedBoundary.width/2),(trimmedBoundary.height/2)) );
     }
 
     @Override
@@ -59,7 +73,7 @@ public class CircleRoom extends Room{
     }
 
     /**
-     * trim boundary so that the size is always even*even
+     * trim boundary so that the size is always n*n where "n" is even and >=MIN_ROOM_SIZE.x;
      * @return null if invalid boundary,otherwise trimmed boundary
      */
     private RoomBoundary trimBoundary(RoomBoundary boundary){
@@ -136,5 +150,95 @@ public class CircleRoom extends Room{
             currentPos=Vector2Int.plus(currentPos,moveOffset);
         }
 
+    }
+
+//    private void trim44(){ //deprecated
+//        Vector2Int bottomLeft=trimmedBoundary.bottomLeft;
+//        Vector2Int upLeft=new Vector2Int(bottomLeft.x,bottomLeft.y+trimmedBoundary.height-1);
+//        Vector2Int upRight=new Vector2Int(bottomLeft.x+trimmedBoundary.width-1,bottomLeft.y+trimmedBoundary.height-1);
+//        Vector2Int bottomRight=new Vector2Int(bottomLeft.x+trimmedBoundary.width-1,bottomLeft.y);
+//
+//        //four corners
+//        if (!world.existsTile(Vector2Int.plus(Vector2Int.DOWN_LEFT,bottomLeft))){
+//            world.clearAt(upLeft);
+//        }
+//        if (!world.existsTile(Vector2Int.plus(Vector2Int.UP_LEFT,upLeft))){
+//            world.clearAt(upLeft);
+//        }
+//        if (!world.existsTile(Vector2Int.plus(Vector2Int.UP_RIGHT,upRight))){
+//            world.clearAt(upRight);
+//        }
+//        if (!world.existsTile(Vector2Int.plus(Vector2Int.DOWN_RIGHT,bottomRight))){
+//            world.clearAt(bottomRight);
+//        }
+//
+//    }
+
+    private void trimArcs(TETile wall){
+        int arcCount=(trimmedBoundary.height/2);
+
+        Vector2Int middleLeft=Vector2Int.plus
+                (trimmedBoundary.bottomLeft,new Vector2Int(0,trimmedBoundary.height/2));
+        Vector2Int middleRight=new Vector2Int(middleLeft.x+trimmedBoundary.width-1,middleLeft.y);
+        //repeat a lot of codes I DON'T CARE !! (I'm wailing~ :<)
+        //bottomLeft part
+        Vector2Int currentPos=new Vector2Int(middleLeft.x,middleLeft.y-1);
+//        currentPos.y--;
+        Vector2Int moveDirection=Vector2Int.DOWN_RIGHT;
+        Vector2Int checkDirection=Vector2Int.DOWN_LEFT;
+        TETile nextTile=null;
+        for (int i = 0; i < arcCount; i++) {
+            if (!world.existsTile(Vector2Int.plus(currentPos,checkDirection)) ){
+                nextTile=world.getTile(Vector2Int.plus(currentPos,moveDirection));
+                if (nextTile!=null&&nextTile.character()==wall.character()){
+                    world.clearAt(Vector2Int.plus(currentPos,Vector2Int.DOWN));
+                }
+            }
+
+            currentPos=Vector2Int.plus(currentPos,moveDirection);
+        }
+        //bottomRight
+        currentPos=new Vector2Int(middleRight.x,middleRight.y-1);
+//        currentPos.y--;
+        moveDirection=Vector2Int.DOWN_LEFT;
+        checkDirection=Vector2Int.DOWN_RIGHT;
+        for (int i = 0; i < arcCount; i++) {
+            if (!world.existsTile(Vector2Int.plus(currentPos,checkDirection))){
+                nextTile=world.getTile(Vector2Int.plus(currentPos,moveDirection));
+                if (nextTile!=null&&nextTile.character()==wall.character()){
+                    world.clearAt(Vector2Int.plus(currentPos,Vector2Int.DOWN));
+                }
+            }
+
+            currentPos=Vector2Int.plus(currentPos,moveDirection);
+        }
+        //upLeft
+        currentPos=new Vector2Int(middleLeft.x,middleLeft.y);
+        moveDirection=Vector2Int.UP_RIGHT;
+        checkDirection=Vector2Int.UP_LEFT;
+        for (int i = 0; i < arcCount; i++) {
+            if (!world.existsTile(Vector2Int.plus(currentPos,checkDirection)) ){
+                nextTile=world.getTile(Vector2Int.plus(currentPos,moveDirection));
+                if (nextTile!=null&&nextTile.character()==wall.character()){
+                    world.clearAt(Vector2Int.plus(currentPos,Vector2Int.UP));
+                }
+            }
+
+            currentPos=Vector2Int.plus(currentPos,moveDirection);
+        }
+        //upRight
+        currentPos=new Vector2Int(middleRight.x,middleRight.y);
+        moveDirection=Vector2Int.UP_LEFT;
+        checkDirection=Vector2Int.UP_RIGHT;
+        for (int i = 0; i < arcCount; i++) {
+            if (!world.existsTile(Vector2Int.plus(currentPos,checkDirection))){
+                nextTile=world.getTile(Vector2Int.plus(currentPos,moveDirection));
+                if (nextTile!=null&&nextTile.character()==wall.character()){
+                    world.clearAt(Vector2Int.plus(currentPos,Vector2Int.UP));
+                }
+            }
+
+            currentPos=Vector2Int.plus(currentPos,moveDirection);
+        }
     }
 }

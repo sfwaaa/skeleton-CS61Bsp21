@@ -4,8 +4,8 @@ import byow.TileEngine.TERenderer;
 
 /**
  * Rendering the world,avoid using TERenderer directly
- * This class directly renders the whole world,
- * so override it to implement fancy rendering effect
+ * This class directly renders the whole world, add some processor to
+ * implement fancy rendering effects (rather than override this class)
  */
 public class WorldRenderer {
 

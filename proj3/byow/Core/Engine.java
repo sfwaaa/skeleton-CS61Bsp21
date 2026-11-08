@@ -1,16 +1,11 @@
 package byow.Core;
 
-import byow.TileEngine.TETile;
-import byow.TileEngine.Tileset;
+import byow.TileEngine.*;
 import byow.World.*;
-import byow.World.Generation.Room.Builder.RandomRoomBuilder;
-import byow.World.Generation.Room.Builder.RoomBoundaryBuilder;
-import byow.World.Generation.Room.Builder.RoomBuilder;
-import byow.World.Generation.Room.Builder.SingleRoomBuilder;
-import byow.World.Generation.Room.CircleRoom;
-import byow.World.Generation.Room.RectangleRoom;
-import byow.World.Generation.RoomBoundary;
-import byow.World.Generation.WorldGenerator;
+import byow.World.Generation.Room.Builder.*;
+import byow.World.Generation.Room.*;
+import byow.World.Generation.*;
+
 
 import java.util.Random;
 
@@ -32,7 +27,7 @@ public class Engine {
 
     //seeds for testing
     private static final long[] TEST_SEEDS=new long[]
-            {101750485,724895794,77392579,13487979,35793599,27932983};
+            {101750485,724895794,77392579,13487979,35793599,27932983,43892472,23374293,538429348};
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
     //simple test
@@ -45,12 +40,15 @@ public class Engine {
         SingleRoomBuilder rectRoomBuilder=
                 new SingleRoomBuilder(new RectangleRoom(),new TETile[]{Tileset.FLOOR});
         SingleRoomBuilder circleRoomBuilder=
-                new SingleRoomBuilder(new CircleRoom(), new TETile[]{Tileset.WATER});
+                new SingleRoomBuilder(new CircleRoom(), new TETile[]{Tileset.FLOOR});
         RandomRoomBuilder randomRoomBuilder=new RandomRoomBuilder
                 (new RoomBuilder[]{rectRoomBuilder,circleRoomBuilder});
-        WorldGenerator generator=new WorldGenerator(randomRoomBuilder,null);
 
-        World world =generator.generateWorld(worldSize,TEST_SEEDS[3]);
+        RoomConnector connector=new RoomConnector(Tileset.FLOOR);
+
+        WorldGenerator generator=new WorldGenerator(randomRoomBuilder,connector,new RoomWallBuilder(Tileset.WALL));
+
+        World world =generator.generateWorld(worldSize,TEST_SEEDS[8],Tileset.NOTHING);
 
         renderer.initialize(world);
         renderer.renderWorld();

@@ -2,8 +2,7 @@ package byow.World.Generation.Room;
 
 
 import byow.Core.RandomUtils;
-import byow.TileEngine.TETile;
-import byow.TileEngine.Tileset;
+import byow.TileEngine.*;
 import byow.World.Generation.RoomBoundary;
 import byow.World.Vector2Int;
 import byow.World.World;
@@ -17,6 +16,7 @@ public class RectangleRoom extends Room {
     private static final Vector2Int MIN_ROOM_SIZE =new Vector2Int(3,3);
     private TETile floor;
     private boolean canBuild =false;
+    private Vector2Int center=Vector2Int.ZERO;
     @Override
     public void initialize(World world, RoomBoundary boundary, Random random,TETile[] floors) {
         super.initialize(world, boundary,random,floors);
@@ -36,20 +36,26 @@ public class RectangleRoom extends Room {
             return false;
         }
         RoomBoundary shrunkBoundary=randomShrink(this.boundary);
-
+        center=Vector2Int.plus(shrunkBoundary.bottomLeft,
+                new Vector2Int(shrunkBoundary.width/2,shrunkBoundary.height/2));
 //        putBoundary(shrunkBoundary, Tileset.WALL);//previous implementation,can be used for debugging
         putFloor(shrunkBoundary,this.floor);
         return true;
     }
 
     @Override
-    public Vector2Int buildEntrance(Vector2Int direction) {
-        return null;
+    public Vector2Int minRequiredSize() {
+        return MIN_ROOM_SIZE;
     }
 
     @Override
-    public Vector2Int minRequiredSize() {
-        return MIN_ROOM_SIZE;
+    public void trim(TETile wall) {
+        return;//basic shape need not be trimmed
+    }
+
+    @Override
+    public Vector2Int centerPosition() {
+        return center;
     }
 
     @Override

@@ -36,35 +36,50 @@ public class WorldGenerator {
      */
     private static final int SPLIT_BIAS=5;
 
+    //sum up == 100%
+    private static final int HALLWAY_WIDTH_ONE_RATE=90;//90%
+    private static final int HALLWAY_WIDTH_TWO_RATE=100-HALLWAY_WIDTH_ONE_RATE;//10%
+
+
     private RoomBuilder roomBuilder;
     private RoomConnector roomConnector;
+    private RoomWallBuilder wallBuilder;
+    private Room[] builtRooms;
 
-    public WorldGenerator(RoomBuilder builder,RoomConnector connector){
-
+    public WorldGenerator(RoomBuilder builder,RoomConnector connector,RoomWallBuilder wallBuilder){
         this.roomBuilder=builder;
         this.roomConnector=connector;
+        this.wallBuilder=wallBuilder;
     }
 
-    public World generateWorld(Vector2Int worldSize,long seed){
-        World world=new World(worldSize, Tileset.NOTHING);
+    public World generateWorld(Vector2Int worldSize,long seed,TETile emptyTile){
+        World world=new World(worldSize, emptyTile);
         Random random=new Random(seed);
+
         //splitting
         ArrayList<RoomBoundary> boundaries=new ArrayList<>();
         RoomBoundary worldBoundary=new RoomBoundary
                 (Vector2Int.ZERO,world.getWidth(),world.getHeight());
         this.split(random,SPLIT_BIAS,worldBoundary,boundaries);
         //building
-        Room[] rooms = buildingRooms(world,boundaries.toArray(new RoomBoundary[0]),random,
+        ArrayList<Room> rooms = buildingRooms(world,boundaries.toArray(new RoomBoundary[0]),random,
                 ROOM_NUMBER_MIN,ROOM_NUMBER_MAX);
+        this.builtRooms=rooms.toArray(new Room[0]);
         /*
         for(RoomBoundary boundary : boundaries){
             System.out.println(boundary.width+"x"+boundary.height+"rect at "+boundary.bottomLeft.toString());
             this.roomBuilder.build(world,boundary,random);
         }
         */
+
         //connecting
+//        int index=RandomUtils.uniform(new Random(),1,rooms.length);
+//        roomConnector.connect(world,random,rooms[index],rooms[index-1],2);
+        connectRooms(world,rooms,random);
+        wallBuilder.buildWall(world,this.builtRooms);
         return world;
     }
+
     /**
      * Split the world into different rectangles(RoomBoundary,always be a rectangle)
      * @param bias the perturbation in splitting rooms,must be POSITIVE
@@ -169,7 +184,7 @@ public class WorldGenerator {
         return new RoomBoundary[]{boundary,newBoundary};
     }
 
-    private Room[] buildingRooms(World world,RoomBoundary[] boundaries,Random random,int countMin, int countMax){
+    private ArrayList<Room> buildingRooms(World world,RoomBoundary[] boundaries,Random random,int countMin, int countMax){
         RandomUtils.shuffle(random,boundaries);
         ArrayList<Room> rooms=new ArrayList<>();
         boolean chooseBuilding=false;
@@ -193,7 +208,7 @@ public class WorldGenerator {
                 }
             }
         }
-        return rooms.toArray(new Room[0]);
+        return rooms;
     }
     //simply check whether there are some tiles around the boundary
     private boolean checkAdjacentTile(World world,RoomBoundary boundary){
@@ -208,6 +223,35 @@ public class WorldGenerator {
                         (boundary.bottomLeft.x+boundary.width,boundary.bottomLeft.y));
         return result;
 
+    }
+
+    private void connectRooms(World world,ArrayList<Room> rooms,Random random){
+        ArrayList<Room> connectedRoom=new ArrayList<>(rooms.size());
+        ArrayList<Room> disjointRooms=new ArrayList<>(rooms);
+        Room r1=disjointRooms.remove
+                (RandomUtils.uniform(random,0,disjointRooms.size()/2));
+        Room r2=disjointRooms.remove
+                (RandomUtils.uniform(random,disjointRooms.size()/2,disjointRooms.size()));
+        int width=generateHallwayWidth(random);
+        this.roomConnector.connect(world,random,r1,r2,width);
+        connectedRoom.add(r1);
+        connectedRoom.add(r2);
+        while (!disjointRooms.isEmpty()){
+            r1=disjointRooms.remove(RandomUtils.uniform(random,0,disjointRooms.size()));
+            r2=connectedRoom.get(RandomUtils.uniform(random,0,connectedRoom.size()));
+            width=generateHallwayWidth(random);
+            this.roomConnector.connect(world,random,r1,r2,width);
+        }
+    }
+    private int generateHallwayWidth(Random random){
+        //
+        if (RandomUtils.uniform
+                (random,1,HALLWAY_WIDTH_ONE_RATE+HALLWAY_WIDTH_TWO_RATE+1)<HALLWAY_WIDTH_TWO_RATE) {
+            return 2;
+        }
+        else {
+            return 1;
+        }
     }
 
 }

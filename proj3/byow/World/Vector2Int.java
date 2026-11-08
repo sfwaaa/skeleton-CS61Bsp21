@@ -30,7 +30,9 @@ public class Vector2Int {
     public static Vector2Int times(int d,Vector2Int a){
         return new Vector2Int(a.x*d, a.y*d);
     }
-
+    public static boolean equal(Vector2Int v1,Vector2Int v2){
+        return v1.x==v2.x && v1.y==v2.y;
+    }
     //maybe times(a,b)...
 
     public int x;
@@ -50,7 +52,7 @@ public class Vector2Int {
 
     /**
      *
-     * @return square Magnitude,may have integer overflow
+     * @return square Magnitude,may have int overflow
      */
     public int sqrMagnitude(){
         return x*x+y*y;
@@ -59,5 +61,17 @@ public class Vector2Int {
     @Override
     public String toString() {
         return "(" + x + "," + y + ")";
+    }
+
+    @Override
+    public boolean equals(Object obj) {
+        if (obj==null){
+            return false;
+        }
+        if (obj.getClass()!= Vector2Int.class){
+            return false;
+        }
+        Vector2Int v=(Vector2Int) obj;
+        return v.x==this.x&&v.y==this.y;
     }
 }
