@@ -182,10 +182,10 @@ public class Repository {
             other=io.readBlob(otherSha1);
         }
         io.writeToFile(io.joinPath(workingDirectory,fileName),
-                "<<<<<<< HEAD",System.lineSeparator(),
+                "<<<<<<< HEAD\n",
                 current,
-                System.lineSeparator(),"=======",System.lineSeparator(),
-                other,">>>>>>>");
+                "=======\n",
+                other,">>>>>>>\n");
     }
 
     /**
