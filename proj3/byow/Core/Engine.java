@@ -27,7 +27,10 @@ public class Engine {
 
     //seeds for testing
     private static final long[] TEST_SEEDS=new long[]
-            {101750485,724895794,77392579,13487979,35793599,27932983,43892472,23374293,538429348};
+            {101750485,724895794,77392579,13487979,
+             35793599,27932983,43892472,23374293,
+             538429348,45799375,553792934,432943299,
+             839242039,324392434,647329429};
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
     //simple test
@@ -48,7 +51,7 @@ public class Engine {
 
         WorldGenerator generator=new WorldGenerator(randomRoomBuilder,connector,new RoomWallBuilder(Tileset.WALL));
 
-        World world =generator.generateWorld(worldSize,TEST_SEEDS[8],Tileset.NOTHING);
+        World world =generator.generateWorld(worldSize,TEST_SEEDS[12],Tileset.NOTHING);
 
         renderer.initialize(world);
         renderer.renderWorld();

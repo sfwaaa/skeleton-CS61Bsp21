@@ -33,6 +33,7 @@ public class RoomConnector {
      * particular for hallways with width one
      */
     private void putSingleHallway(World world, Random random, Vector2Int src, Vector2Int dst){
+//        System.out.println("from "+src.toString()+" to "+dst.toString());
         Vector2Int[] directions=getMoveDirection(src,dst);
         Vector2Int horizontalMoveDirection=directions[0];
         Vector2Int verticalMoveDirection=directions[1];
@@ -48,7 +49,7 @@ public class RoomConnector {
             putRow(world,src,dst,horizontalMoveDirection);
         }
         else if(needPutY){//only a line hallway
-            putColumn(world,src,dst,horizontalMoveDirection);
+            putColumn(world,src,dst,verticalMoveDirection);
         }
 
 
@@ -57,7 +58,7 @@ public class RoomConnector {
      * particular for hallways with width >= one
      */
     private void putWiderHallway(World world, Random random, Vector2Int src, Vector2Int dst,int width){
-//        System.out.println("from "+src.toString()+" to "+dst.toString());
+//       System.out.println("from "+src.toString()+" to "+dst.toString());
         Vector2Int[] directions=getMoveDirection(src,dst);
         Vector2Int horizontalMoveDirection=directions[0];
         Vector2Int verticalMoveDirection=directions[1];
