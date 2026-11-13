@@ -1,17 +1,22 @@
 package byow.Core;
 
+import byow.Input.InputReader;
+import byow.Input.KeyboardInputReader;
+import byow.Input.Processor.MainMenuInputProcessor;
+import byow.Input.Processor.SeedProcessor;
 import byow.TileEngine.*;
+import byow.UI.UIDrawer;
 import byow.World.*;
 import byow.World.Generation.Room.Builder.*;
 import byow.World.Generation.Room.*;
 import byow.World.Generation.*;
 
+import java.awt.*;
+import java.rmi.server.UID;
 
-import java.util.Random;
-
-//to be frank,this class should be named as "WorldController or InputHandler ...",
+//to be frank,this class should be named as "GameplayManager or GameFlowController",
 //rather than the vague name Engine
-//this class is responsible for initializing renderers, taking input and calling method.
+//this class is responsible for initializing each module and construct the game loop
 public class Engine {
     /**
      * Resolution(Canvas Size) : 1280x720 -> 80x45 tiles,
@@ -25,6 +30,8 @@ public class Engine {
     private static final int PADDING_UP=2;
     private static final int PADDING_DOWN=2;
 
+    private long inputSeed=0;
+
     //seeds for testing
     private static final long[] TEST_SEEDS=new long[]
             {101750485,724895794,77392579,13487979,
@@ -34,34 +41,30 @@ public class Engine {
 
     //in the future interact interface,all behaviors should be defined in the InputSource interface...
     //simple test
-    public static void main(String[] args){
-        WorldRenderer renderer=new WorldRenderer
-                (CANVAS_SIZE,TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
+    public static void main(String[] args){//USED FOR TESTING
+        /*
         Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
                 PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
-
-        SingleRoomBuilder rectRoomBuilder=
-                new SingleRoomBuilder(new RectangleRoom(),new TETile[]{Tileset.FLOOR});
-        SingleRoomBuilder circleRoomBuilder=
-                new SingleRoomBuilder(new CircleRoom(), new TETile[]{Tileset.FLOOR});
-        RandomRoomBuilder randomRoomBuilder=new RandomRoomBuilder
-                (new RoomBuilder[]{rectRoomBuilder,circleRoomBuilder});
-
-        RoomConnector connector=new RoomConnector(Tileset.FLOOR);
-
-        WorldGenerator generator=new WorldGenerator(randomRoomBuilder,connector,new RoomWallBuilder(Tileset.WALL));
-
-        World world =generator.generateWorld(worldSize,TEST_SEEDS[12],Tileset.NOTHING);
-
-        renderer.initialize(world);
+        Engine engine=new Engine();
+        WorldGenerator generator=engine.getWorldGenerator();
+        World world=generator.generateWorld(worldSize,TEST_SEEDS[13], Tileset.NOTHING);
+        WorldRenderer renderer=engine.initializeWorldRenderer(world,CANVAS_SIZE,
+                TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
         renderer.renderWorld();
+        */
 
-//        World textWorld=new World(10,10,Tileset.NOTHING );
-//        RoomBoundary boundary=new RoomBoundary(Vector2Int.ZERO,8,8);
-//        CircleRoom room=new CircleRoom();
-//        room.initializeBoundary(textWorld,boundary,new Random());
-//        room.buildRoomFloor(Tileset.FLOOR);
-//        System.out.println(TETile.toString(textWorld.getFrame()));
+        /*
+        Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
+                PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
+        Engine engine=new Engine();
+        UIDrawer uiDrawer=new UIDrawer(CANVAS_SIZE,TILE_SIZE_IN_PIXEL);
+        WorldRenderer renderer=engine.initializeWorldRenderer
+                (CANVAS_SIZE,TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
+        uiDrawer.drawMainMenu();
+        */
+
+        Engine engine=new Engine();
+        engine.interactWithKeyboard();
     }
 
     /**
@@ -69,6 +72,21 @@ public class Engine {
      * including inputs from the main menu.
      */
     public void interactWithKeyboard() {
+        //only use constant in this method...
+
+        Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
+                PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
+        WorldGenerator generator=this.getWorldGenerator();
+        WorldRenderer renderer=this.initializeWorldRenderer(CANVAS_SIZE,
+                TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
+        UIDrawer uiDrawer=new UIDrawer(CANVAS_SIZE,TILE_SIZE_IN_PIXEL);
+        InputReader inputReader=new KeyboardInputReader();
+        boolean startGame=mainMenuLoop(uiDrawer,inputReader,new MainMenuInputProcessor());
+        if (!startGame){
+            return;
+        }
+        World world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
+        renderer.renderWorld(world);
     }
 
     /**
@@ -101,7 +119,96 @@ public class Engine {
         // See proj3.byow.InputDemo for a demo of how you can make a nice clean interface
         // that works for many different input types.
 
+        //only use constant in this method...
+        //below is just some copied stuff from interactWithKeyboard() just removing some rendering callings
+        //I don't care much LOL
+
         TETile[][] finalWorldFrame = null;
         return finalWorldFrame;
+    }
+
+    //return whether start the game
+    private boolean mainMenuLoop(UIDrawer uiDrawer, InputReader reader, MainMenuInputProcessor inputProcessor){
+        uiDrawer.drawMainMenu();
+        Character in=null;
+        while (true){
+            in=reader.readInput();
+            if (inputProcessor.requestNewWorld(in)){
+                readSeed(uiDrawer,reader,inputProcessor);
+                return true;
+            }
+            if (inputProcessor.requestLoadWorld(in)){
+                uiDrawer.drawText(new Vector2Int(CANVAS_SIZE.x/2,3),UIDrawer.FONT_HUD,Color.WHITE,"Work in Progress");
+                return false;
+            }
+            if (inputProcessor.requestQuit(in)){
+                uiDrawer.drawText(new Vector2Int(CANVAS_SIZE.x/2,0),UIDrawer.FONT_HUD,Color.WHITE,"Work in Progress");
+                return false;
+            }
+        }
+    }
+    private void readSeed(UIDrawer uiDrawer,InputReader reader,MainMenuInputProcessor inputProcessor){
+        SeedProcessor seedProcessor=new SeedProcessor();
+        Character in;
+        in=reader.readInput();
+
+        //some hardcode prompt I don't care
+        String prompt="Entering a seed:";
+        String wrongPrompt="Invalid seed,enter another one:";
+        String currentPrompt=prompt;
+
+        Vector2Int promptPosition=new Vector2Int(CANVAS_SIZE.x/2,15+CANVAS_SIZE.y/2);
+        Vector2Int seedPosition=new Vector2Int(CANVAS_SIZE.x/2,-15+CANVAS_SIZE.y/2);
+
+        uiDrawer.clearCanvas();
+        uiDrawer.drawText(promptPosition,UIDrawer.FONT_OPTION, Color.WHITE,currentPrompt);
+        uiDrawer.drawText(seedPosition,UIDrawer.FONT_OPTION, Color.WHITE,"test");
+
+        this.inputSeed=-1;
+        for(in=reader.readInput();this.inputSeed<=0;in=reader.readInput()){
+            if (in==null){
+                continue;
+            }
+            if(inputProcessor.doneEnteringSeed(in)){
+                this.inputSeed=seedProcessor.getSeed();
+                //invalid seed ,show wrong prompt
+                if(inputSeed<=0){
+                    currentPrompt=wrongPrompt;
+                    uiDrawer.clearCanvas();
+                    uiDrawer.drawText(promptPosition,UIDrawer.FONT_OPTION, Color.WHITE,currentPrompt);
+                }
+                continue;
+            }
+            seedProcessor.feed(in);
+            uiDrawer.clearCanvas();
+            uiDrawer.drawText(promptPosition,UIDrawer.FONT_OPTION, Color.WHITE,currentPrompt);
+            uiDrawer.drawText(seedPosition,UIDrawer.FONT_OPTION,
+                    Color.WHITE,seedProcessor.getSeedString());
+        }
+
+    }
+
+    private WorldGenerator getWorldGenerator(){
+        //hard coded tiles I don't care :(
+        SingleRoomBuilder rectRoomBuilder=
+                new SingleRoomBuilder(new RectangleRoom(),new TETile[]{Tileset.FLOOR});
+        SingleRoomBuilder circleRoomBuilder=
+                new SingleRoomBuilder(new CircleRoom(), new TETile[]{Tileset.FLOOR});
+        RandomRoomBuilder randomRoomBuilder=new RandomRoomBuilder
+                (new RoomBuilder[]{rectRoomBuilder,circleRoomBuilder});
+
+        RoomConnector connector=new RoomConnector(Tileset.FLOOR);
+
+        WorldGenerator generator=new WorldGenerator(randomRoomBuilder,connector,new RoomWallBuilder(Tileset.WALL));
+        return generator;
+    }
+    private WorldRenderer initializeWorldRenderer(
+            Vector2Int canvasSizeInPixel,int tileSizeInPixel,
+            int paddingLeft,int paddingDown){
+
+        WorldRenderer renderer=new WorldRenderer
+                (canvasSizeInPixel,tileSizeInPixel,paddingLeft,paddingDown);
+        renderer.initializeCanvas();
+        return renderer;
     }
 }

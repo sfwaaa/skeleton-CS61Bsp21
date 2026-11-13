@@ -209,6 +209,18 @@ public class World {
         }
     }
 
+    /**
+     * Swap two tile in the world,not checking the swapped tile
+     */
+    public void swap(Vector2Int p1,Vector2Int p2){
+        if (!validPosition(p1)||!validPosition(p2)){
+            return;
+        }
+        TETile t1=this.tilePlane[p1.x][p1.y];
+        tilePlane[p1.x][p1.y]=tilePlane[p2.x][p2.y];
+        tilePlane[p2.x][p2.y]=t1;
+    }
+
     private void fill(TETile tile){
         for (int x = 0; x < widthMax; x++) {
             for (int y = 0; y < heightMax; y++) {

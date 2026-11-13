@@ -175,7 +175,7 @@ public class CircleRoom extends Room{
 //    }
 
     private void trimArcs(TETile wall){
-        int arcCount=(trimmedBoundary.height/2);
+        int arcCount=(trimmedBoundary.height/2)-1;
 
         Vector2Int middleLeft=Vector2Int.plus
                 (trimmedBoundary.bottomLeft,new Vector2Int(0,trimmedBoundary.height/2));

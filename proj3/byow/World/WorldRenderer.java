@@ -14,7 +14,6 @@ public class WorldRenderer {
     private final int tileSizeInPixel;
     private final int paddingLeft;
     private final int paddingDown;
-    private World world;
 
     /**
      * Calculate the size of the world that a renderer can (at least) render
@@ -40,14 +39,14 @@ public class WorldRenderer {
      }
 
     /**
-     * Initialize the renderer with the given world and constructor params
+     * Initialize the renderer with the given world and constructor params,
+     * due to the tile engine,I must use the way to initialize my canvas
      */
-     public void initialize(World world){
-         this.world=world;
+     public void initializeCanvas(){
          this.renderer.initialize(canvasSize.x/tileSizeInPixel,canvasSize.y/tileSizeInPixel,
                  paddingLeft,paddingDown);
      }
-     public void renderWorld(){
+     public void renderWorld(World world){
          this.renderer.renderFrame(world.getFrame());
      }
 
