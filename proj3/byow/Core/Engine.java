@@ -4,6 +4,7 @@ import byow.Input.InputReader;
 import byow.Input.KeyboardInputReader;
 import byow.Input.Processor.MainMenuInputProcessor;
 import byow.Input.Processor.SeedProcessor;
+import byow.Input.StringInputReader;
 import byow.TileEngine.*;
 import byow.UI.UIDrawer;
 import byow.World.*;
@@ -63,9 +64,14 @@ public class Engine {
         uiDrawer.drawMainMenu();
         */
 
+        /*
         Engine engine=new Engine();
-        engine.interactWithKeyboard();
+        TETile[][] wo= engine.interactWithInputString("N1342933S");
+        System.out.println(TETile.toString(wo));
+        */
     }
+
+
 
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
@@ -88,7 +94,6 @@ public class Engine {
         World world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
         renderer.renderWorld(world);
     }
-
     /**
      * Method used for autograding and testing your code. The input string will be a series
      * of characters (for example, "n123sswwdasdassadwas", "n123sss:q", "lwww". The engine should
@@ -122,10 +127,39 @@ public class Engine {
         //only use constant in this method...
         //below is just some copied stuff from interactWithKeyboard() just removing some rendering callings
         //I don't care much LOL
+        Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
+                PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
+        WorldGenerator generator=this.getWorldGenerator();
+        MainMenuInputProcessor menuProcessor=new MainMenuInputProcessor();
+        InputReader reader=new StringInputReader(input);
 
-        TETile[][] finalWorldFrame = null;
-        return finalWorldFrame;
+        Character in=null;
+        boolean generateWorld=false;
+        while (true){
+            in=reader.readInput();
+            if (menuProcessor.requestNewWorld(in)){
+                readSeedWithoutRendering(reader,menuProcessor);
+                generateWorld=true;
+                break;
+            }
+            if (menuProcessor.requestLoadWorld(in)){
+                generateWorld=true;
+                break;//work in progress
+            }
+            if (menuProcessor.requestQuit(in)){
+                break;//work in progress
+            }
+        }
+        if (!generateWorld){
+            return null;
+        }
+        World world=generator.generateWorld(worldSize,this.inputSeed,Tileset.NOTHING);
+        System.out.println(inputSeed);
+        return world.getFrame();
     }
+
+
+
 
     //return whether start the game
     private boolean mainMenuLoop(UIDrawer uiDrawer, InputReader reader, MainMenuInputProcessor inputProcessor){
@@ -184,6 +218,22 @@ public class Engine {
             uiDrawer.drawText(promptPosition,UIDrawer.FONT_OPTION, Color.WHITE,currentPrompt);
             uiDrawer.drawText(seedPosition,UIDrawer.FONT_OPTION,
                     Color.WHITE,seedProcessor.getSeedString());
+        }
+
+    }
+
+    private void readSeedWithoutRendering(InputReader reader,MainMenuInputProcessor inputProcessor){
+        SeedProcessor seedProcessor=new SeedProcessor();
+        Character in;
+        this.inputSeed=-1;
+        for(in=reader.readInput();this.inputSeed<=0;in=reader.readInput()){
+            if (in==null){
+                continue;
+            }
+            if(inputProcessor.doneEnteringSeed(in)){
+                this.inputSeed=seedProcessor.getSeed();
+            }
+            seedProcessor.feed(in);
         }
 
     }
