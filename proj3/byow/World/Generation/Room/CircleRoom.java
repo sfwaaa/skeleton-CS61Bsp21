@@ -88,38 +88,47 @@ public class CircleRoom extends Room{
         }
 
         //simply check 8 directions...
+        TETile tile=null;
         centerPos=position;
 
         position=Vector2Int.plus(centerPos,Vector2Int.LEFT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.RIGHT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.UP);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.DOWN);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.UP_LEFT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.UP_RIGHT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.DOWN_LEFT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         position=Vector2Int.plus(centerPos,Vector2Int.DOWN_RIGHT);
-        if (world.getTile(position).character()==floor.character()){
+        tile=world.getTile(position);
+        if (tile!=null&&tile.character()==floor.character()){
             return position;
         }
         return this.centerPosition();
