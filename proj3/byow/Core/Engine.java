@@ -1,10 +1,9 @@
 package byow.Core;
 
-import byow.Input.InputReader;
-import byow.Input.KeyboardInputReader;
-import byow.Input.Processor.MainMenuInputProcessor;
-import byow.Input.Processor.SeedProcessor;
-import byow.Input.StringInputReader;
+import byow.Entity.MovableObject;
+import byow.Input.Processor.*;
+import byow.Input.*;
+import byow.Persistent.GamePrefs;
 import byow.TileEngine.*;
 import byow.UI.UIDrawer;
 import byow.World.*;
@@ -13,7 +12,7 @@ import byow.World.Generation.Room.*;
 import byow.World.Generation.*;
 
 import java.awt.*;
-import java.rmi.server.UID;
+import java.util.Random;
 
 //to be frank,this class should be named as "GameplayManager or GameFlowController",
 //rather than the vague name Engine
@@ -28,10 +27,18 @@ public class Engine {
     //leave some space for UI and empty space
     private static final int PADDING_LEFT=10;//
     private static final int PADDING_RIGHT=10;
-    private static final int PADDING_UP=2;
+    private static final int PADDING_UP=4;
     private static final int PADDING_DOWN=2;
 
+    private static final int HUD_HEIGHT=(CANVAS_SIZE.y)-(PADDING_UP/2)*TILE_SIZE_IN_PIXEL;
+
     private long inputSeed=0;
+    private World world=null;
+    private WorldRenderer worldRenderer=null;
+    private UIDrawer uiDrawer=null;
+    private Vector2Int initialPlayerPosition =null;
+    private GamePrefs prefs;
+
 
     //seeds for testing
     private static final long[] TEST_SEEDS=new long[]
@@ -64,11 +71,13 @@ public class Engine {
         uiDrawer.drawMainMenu();
         */
 
-        /*
         Engine engine=new Engine();
-        TETile[][] wo= engine.interactWithInputString("N1342933S");
+        //N999SDDDWWWDDD
+        TETile[][] wo= engine.interactWithInputString("LWWWDDD");
         System.out.println(TETile.toString(wo));
-        */
+
+        //Engine engine=new Engine();
+        //engine.interactWithKeyboard();
     }
 
 
@@ -76,23 +85,29 @@ public class Engine {
     /**
      * Method used for exploring a fresh world. This method should handle all inputs,
      * including inputs from the main menu.
+     * In fact,it's indeed a trash...
      */
     public void interactWithKeyboard() {
-        //only use constant in this method...
-
+        //only use constants in this method...
         Vector2Int worldSize=WorldRenderer.getWorldSize(CANVAS_SIZE,TILE_SIZE_IN_PIXEL,
                 PADDING_LEFT,PADDING_RIGHT,PADDING_DOWN,PADDING_UP);
         WorldGenerator generator=this.getWorldGenerator();
-        WorldRenderer renderer=this.initializeWorldRenderer(CANVAS_SIZE,
+        worldRenderer=this.initializeWorldRenderer(CANVAS_SIZE,
                 TILE_SIZE_IN_PIXEL,PADDING_LEFT,PADDING_DOWN);
-        UIDrawer uiDrawer=new UIDrawer(CANVAS_SIZE,TILE_SIZE_IN_PIXEL);
+        uiDrawer=new UIDrawer(CANVAS_SIZE,TILE_SIZE_IN_PIXEL);
         InputReader inputReader=new KeyboardInputReader();
+        this.prefs=new GamePrefs();
         boolean startGame=mainMenuLoop(uiDrawer,inputReader,new MainMenuInputProcessor());
         if (!startGame){
             return;
         }
-        World world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
-        renderer.renderWorld(world);
+        world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
+
+        MovableObject player=initializePlayer(generator);
+        worldRenderer.renderWorld(world);
+        exploringLoop(inputReader,new PlayerInputProcessor(),player);
+        prefs.save(inputSeed,player.getCurrentPosition());
+        System.out.println("exit!");
     }
     /**
      * Method used for autograding and testing your code. The input string will be a series
@@ -132,6 +147,7 @@ public class Engine {
         WorldGenerator generator=this.getWorldGenerator();
         MainMenuInputProcessor menuProcessor=new MainMenuInputProcessor();
         InputReader reader=new StringInputReader(input);
+        this.prefs=new GamePrefs();
 
         Character in=null;
         boolean generateWorld=false;
@@ -143,18 +159,32 @@ public class Engine {
                 break;
             }
             if (menuProcessor.requestLoadWorld(in)){
+                if (!this.prefs.hasSavedData()){
+                    return null;
+                }
+                this.inputSeed=prefs.loadSeed();
+                this.initialPlayerPosition =prefs.loadPlayerPosition();
                 generateWorld=true;
-                break;//work in progress
+                break;
             }
             if (menuProcessor.requestQuit(in)){
-                break;//work in progress
+                return null;
             }
         }
         if (!generateWorld){
             return null;
         }
-        World world=generator.generateWorld(worldSize,this.inputSeed,Tileset.NOTHING);
-        System.out.println(inputSeed);
+        world=generator.generateWorld(worldSize,this.inputSeed,Tileset.NOTHING);
+        MovableObject player=initializePlayer(generator);
+
+        PlayerInputProcessor playerInputProcessor=new PlayerInputProcessor();
+        while ((in=reader.readInput())!=null){
+            if (playerInputProcessor.getQuit(in)){
+                break;
+            }
+            player.move(playerInputProcessor.getMove(in));
+        }
+        prefs.save(inputSeed,player.getCurrentPosition());
         return world.getFrame();
     }
 
@@ -172,15 +202,58 @@ public class Engine {
                 return true;
             }
             if (inputProcessor.requestLoadWorld(in)){
-                uiDrawer.drawText(new Vector2Int(CANVAS_SIZE.x/2,3),UIDrawer.FONT_HUD,Color.WHITE,"Work in Progress");
-                return false;
+                if (!this.prefs.hasSavedData()){
+                    System.out.println("no saved data");
+                    return false;
+                }
+                this.inputSeed=prefs.loadSeed();
+                this.initialPlayerPosition =prefs.loadPlayerPosition();
+                return true;
             }
             if (inputProcessor.requestQuit(in)){
-                uiDrawer.drawText(new Vector2Int(CANVAS_SIZE.x/2,0),UIDrawer.FONT_HUD,Color.WHITE,"Work in Progress");
+                //uiDrawer.drawText(new Vector2Int(CANVAS_SIZE.x/2,0),UIDrawer.FONT_HUD,Color.WHITE,"Work in Progress");
                 return false;
             }
         }
     }
+    //may require passing so many params, so make some of them member variables
+    private void exploringLoop(InputReader inputReader,PlayerInputProcessor inputProcessor,MovableObject player){
+        Vector2Int tilePosition;
+        TETile hudTile=null;
+        String previousHud="";
+        boolean drawHud=false;
+        boolean renderingWorld=false;
+        Character in;
+        while (true){
+            //check hud
+            tilePosition=calculateTileBelowMouse(inputProcessor.getMousePosition());
+            if (world.validPosition(tilePosition)){
+                hudTile=world.getTile(tilePosition);
+                drawHud=!hudTile.description().equals(previousHud);
+                renderingWorld=renderingWorld||drawHud;
+                previousHud=hudTile.description();
+            }
+
+            in=inputReader.readInput();
+            renderingWorld=renderingWorld||
+                   player.move(inputProcessor.getMove(in));
+
+            if (inputProcessor.getQuit(in)){
+                break;
+            }
+
+            //process rendering
+            if (renderingWorld){
+                this.worldRenderer.renderWorld(world);
+                renderingWorld=false;
+            }
+            if (drawHud){
+                this.drawTileDescription(hudTile.description(),this.uiDrawer);
+                drawHud=false;
+            }
+        }
+    }
+
     private void readSeed(UIDrawer uiDrawer,InputReader reader,MainMenuInputProcessor inputProcessor){
         SeedProcessor seedProcessor=new SeedProcessor();
         Character in;
@@ -196,7 +269,7 @@ public class Engine {
 
         uiDrawer.clearCanvas();
         uiDrawer.drawText(promptPosition,UIDrawer.FONT_OPTION, Color.WHITE,currentPrompt);
-        uiDrawer.drawText(seedPosition,UIDrawer.FONT_OPTION, Color.WHITE,"test");
+        //uiDrawer.drawText(seedPosition,UIDrawer.FONT_OPTION, Color.WHITE,"test");
 
         this.inputSeed=-1;
         for(in=reader.readInput();this.inputSeed<=0;in=reader.readInput()){
@@ -260,5 +333,53 @@ public class Engine {
                 (canvasSizeInPixel,tileSizeInPixel,paddingLeft,paddingDown);
         renderer.initializeCanvas();
         return renderer;
+    }
+
+    private void drawTileDescription(String content,UIDrawer drawer){
+        Vector2Int hudPosition=new Vector2Int(content.length()*TILE_SIZE_IN_PIXEL/2,HUD_HEIGHT);
+        drawer.drawText(hudPosition,UIDrawer.FONT_HUD,Color.WHITE,content);
+    }
+
+    /**
+     * Transform the mousePosition into a tile position
+     */
+    private Vector2Int calculateTileBelowMouse(Vector2Int mousePosition){
+        //System.out.println("mouse at : "+mousePosition);
+        return new Vector2Int(mousePosition.x-PADDING_LEFT,mousePosition.y-PADDING_DOWN);
+    }
+
+    /**
+     * Initialize objects,set them into the world randomly
+     * @param avatars avatars whit each representing a movable objects to be initialized
+     * @return initialized objects,the same length as avatars
+     */
+    private MovableObject[] initializeMoveableObjects(World world,WorldGenerator generator,TETile[] obstacles,TETile[] avatars){
+        if (avatars.length==0){
+            return null;
+        }
+        Random random=new Random(this.inputSeed);
+        MovableObject[] objects=new MovableObject[avatars.length];
+        MovableObject newObject;
+        Vector2Int randomPosition=null;
+        Room[] rooms=generator.getBuiltRooms();
+        for (int i = 0; i < avatars.length; i++) {
+           newObject=new MovableObject(world,obstacles,avatars[i]);
+           randomPosition=rooms[RandomUtils.uniform(random,rooms.length)].
+                   randomValidPosition();
+           newObject.setInitialPosition(randomPosition);
+           objects[i]=newObject;
+        }
+        return objects;
+    }
+    private MovableObject initializePlayer(WorldGenerator generator){
+       if (this.initialPlayerPosition ==null){
+           MovableObject[] entities=this.initializeMoveableObjects(this.world,generator,
+                   new TETile[]{Tileset.WALL},new TETile[]{Tileset.AVATAR});
+           return entities[0];
+       }
+       MovableObject player=new MovableObject(this.world,
+               new TETile[]{Tileset.WALL},Tileset.AVATAR);
+       player.setInitialPosition(initialPlayerPosition);
+       return player;
     }
 }

@@ -80,6 +80,11 @@ public class WorldGenerator {
         return world;
     }
 
+    //do not revise this outside
+    public Room[] getBuiltRooms(){
+        return builtRooms;
+    }
+
     /**
      * Split the world into different rectangles(RoomBoundary,always be a rectangle)
      * @param bias the perturbation in splitting rooms,must be POSITIVE

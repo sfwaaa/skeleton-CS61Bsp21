@@ -72,6 +72,59 @@ public class CircleRoom extends Room{
         return new CircleRoom();
     }
 
+    @Override
+    public Vector2Int randomValidPosition() {
+        //simply choose a position around the center position
+        Vector2Int centerPos=this.centerPosition();
+        if (Vector2Int.equal(centerPos,Vector2Int.ZERO)){
+            return null;
+        }
+        int x=RandomUtils.uniform(random,-1,2);
+        int y=RandomUtils.uniform(random,-1,2);
+        Vector2Int offset=new Vector2Int(x,y);
+        Vector2Int position=Vector2Int.plus(centerPos,offset);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+
+        //simply check 8 directions...
+        centerPos=position;
+
+        position=Vector2Int.plus(centerPos,Vector2Int.LEFT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.RIGHT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.UP);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.DOWN);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.UP_LEFT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.UP_RIGHT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.DOWN_LEFT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        position=Vector2Int.plus(centerPos,Vector2Int.DOWN_RIGHT);
+        if (world.getTile(position).character()==floor.character()){
+            return position;
+        }
+        return this.centerPosition();
+    }
+
     /**
      * trim boundary so that the size is always n*n where "n" is even and >=MIN_ROOM_SIZE.x;
      * @return null if invalid boundary,otherwise trimmed boundary

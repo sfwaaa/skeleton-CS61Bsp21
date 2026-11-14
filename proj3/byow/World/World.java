@@ -52,11 +52,18 @@ public class World {
     public int getHeight(){
         return this.heightMax;
     }
+
+    /**
+     * @return whether the position is inside the world
+     */
     public boolean validPosition(Vector2Int position){
         return  position!=null&&
                 0<=position.x && position.x<widthMax &&
                 0<=position.y && position.y<heightMax;
     }
+    /**
+     * @return whether the position is inside the world
+     */
     public boolean validPosition(int x,int y){
         return  0<=x && x<widthMax &&
                 0<=y && y<heightMax;

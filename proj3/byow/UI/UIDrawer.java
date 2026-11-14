@@ -11,7 +11,7 @@ import java.awt.*;
 public class UIDrawer {
    public static final Font FONT_TITLE =new Font("OCR A Extended",Font.PLAIN,50);
    public static final Font FONT_OPTION=new Font("Consolas",Font.BOLD,30);
-   public static final Font FONT_HUD=new Font("Consolas",Font.PLAIN,30);
+   public static final Font FONT_HUD=new Font("Consolas",Font.PLAIN,25);
 
    private static final String TITLE_MAIN="CS61B";
    private static final String TITLE_SECOND="BUILDING YOUR OWN WORLD";

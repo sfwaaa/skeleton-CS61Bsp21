@@ -57,6 +57,12 @@ public abstract class Room {
     //f**k java I have to do this to creat instance in the builder class
     public abstract Room getEmptyRoom();
 
+    /**
+     * a random position inside the room
+     * @return a random position inside the room,null if the room hasn't been constructed
+     */
+    public abstract Vector2Int randomValidPosition();
+
     //another possible method :
     //boolean bounded(Vector2 pos) is the pos bounded in this room?
 }

@@ -17,6 +17,7 @@ public class RectangleRoom extends Room {
     private TETile floor;
     private boolean canBuild =false;
     private Vector2Int center=Vector2Int.ZERO;
+    private RoomBoundary shrunkBoundary;
     @Override
     public void initialize(World world, RoomBoundary boundary, Random random,TETile[] floors) {
         super.initialize(world, boundary,random,floors);
@@ -35,7 +36,7 @@ public class RectangleRoom extends Room {
         if(!canBuild){
             return false;
         }
-        RoomBoundary shrunkBoundary=randomShrink(this.boundary);
+        shrunkBoundary=randomShrink(this.boundary);
         center=Vector2Int.plus(shrunkBoundary.bottomLeft,
                 new Vector2Int(shrunkBoundary.width/2,shrunkBoundary.height/2));
 //        putBoundary(shrunkBoundary, Tileset.WALL);//previous implementation,can be used for debugging
@@ -63,6 +64,19 @@ public class RectangleRoom extends Room {
         return new RectangleRoom();
     }
 
+    @Override
+    public Vector2Int randomValidPosition() {
+        if (this.shrunkBoundary==null){
+            return null;
+        }
+        int x=RandomUtils.uniform(random,shrunkBoundary.bottomLeft.x+1,
+                shrunkBoundary.bottomLeft.x+shrunkBoundary.width-1);
+        int y=RandomUtils.uniform(random,shrunkBoundary.bottomLeft.y+1,
+                shrunkBoundary.bottomLeft.y+shrunkBoundary.height-1);
+        return new Vector2Int(x,y);
+    }
+
+    //shrink the given boundary(inclusive),and return it
     private RoomBoundary randomShrink(RoomBoundary boundary){
         int shrinkableWidth=boundary.width-MIN_ROOM_SIZE.x;
         int shrinkWidth= RandomUtils.uniform(random,shrinkableWidth+1);

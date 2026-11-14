@@ -1,5 +1,7 @@
 package byow.World;
 
+import java.io.Serializable;
+
 /**
  * The simple representation of the 2-dimensional vector with integer component
  */

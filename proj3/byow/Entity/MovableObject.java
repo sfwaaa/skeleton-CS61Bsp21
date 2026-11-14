@@ -12,6 +12,7 @@ public final class MovableObject {
     private final TETile[] obstacles;
 
     private Vector2Int currentPosition;
+    private TETile underFootTile;
     private final TETile avatar;
     public MovableObject(World world, TETile[] obstacles,TETile avatar){
         this.world=world;
@@ -24,22 +25,31 @@ public final class MovableObject {
      * @param position the initial position,should be a valid position!
      */
     public void setInitialPosition(Vector2Int position){
-        world.put(position,avatar);
+        underFootTile=world.put(position,avatar);
         this.currentPosition=position;
     }
 
     /**
      * move 1 step in the four direction
      * @param direction one of the left(-1,0) right (1,0) up(0,1) down(0,-1)
+     * @return true if it actually moved
      */
-    public void move(Vector2Int direction) {
+    public boolean move(Vector2Int direction) {
+        if (direction==null||Vector2Int.equal(Vector2Int.ZERO,direction)){
+            return false;
+        }
         Vector2Int nextPosition = Vector2Int.plus
                 (this.currentPosition, direction);
         if (isObstacle(world.getTile(nextPosition))) {
-            return;
+            return false;
         }
-        world.swap(this.currentPosition, nextPosition);
+        world.put(currentPosition,underFootTile);
+        underFootTile=world.put(nextPosition,avatar);
         this.currentPosition=nextPosition;
+        return true;
+    }
+    public Vector2Int getCurrentPosition(){
+        return currentPosition;
     }
     private boolean isObstacle(TETile tile){
         //since the class TETile is not defined by me,
@@ -51,4 +61,5 @@ public final class MovableObject {
         }
         return false;
     }
+
 }
