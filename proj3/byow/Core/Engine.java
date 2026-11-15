@@ -1,6 +1,8 @@
 package byow.Core;
 
 import byow.Entity.MovableObject;
+import byow.Entity.PathFinding.AStar;
+import byow.Entity.PathFinding.PathFinder;
 import byow.Input.Processor.*;
 import byow.Input.*;
 import byow.Persistent.GamePrefs;
@@ -71,13 +73,13 @@ public class Engine {
         uiDrawer.drawMainMenu();
         */
 
-        Engine engine=new Engine();
-        //N999SDDDWWWDDD
-        TETile[][] wo= engine.interactWithInputString("LWWWDDD");
-        System.out.println(TETile.toString(wo));
+       // Engine engine=new Engine();
+       // //N999SDDDWWWDDD
+       // TETile[][] wo= engine.interactWithInputString("LWWWDDD");
+       // System.out.println(TETile.toString(wo));
 
-        //Engine engine=new Engine();
-        //engine.interactWithKeyboard();
+        Engine engine=new Engine();
+        engine.interactWithKeyboard();
     }
 
 
@@ -104,8 +106,9 @@ public class Engine {
         world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
 
         MovableObject player=initializePlayer(generator);
+        MovableObject tracer=initializeMoveableObjects(world,generator,new TETile[]{Tileset.WALL},new TETile[]{Tileset.TRACKER})[0];
         worldRenderer.renderWorld(world);
-        exploringLoop(inputReader,new PlayerInputProcessor(),player);
+        exploringLoop(inputReader,new PlayerInputProcessor(),player,tracer);
         prefs.save(inputSeed,player.getCurrentPosition());
         System.out.println("exit!");
     }
@@ -217,13 +220,15 @@ public class Engine {
         }
     }
     //may require passing so many params, so make some of them member variables
-    private void exploringLoop(InputReader inputReader,PlayerInputProcessor inputProcessor,MovableObject player){
+    private void exploringLoop(InputReader inputReader,PlayerInputProcessor inputProcessor,
+                               MovableObject player,MovableObject tracer){
         Vector2Int tilePosition;
         TETile hudTile=null;
         String previousHud="";
         boolean drawHud=false;
         boolean renderingWorld=false;
         Character in;
+        PathFinder finder=new AStar(new TETile[]{Tileset.FLOOR});
         while (true){
             //check hud
             tilePosition=calculateTileBelowMouse(inputProcessor.getMousePosition());
@@ -235,6 +240,15 @@ public class Engine {
             }
 
             in=inputReader.readInput();
+            //temp code
+            if (in!=null&&in=='f'){
+                Vector2Int[] path=finder.getPath(world,tracer.getCurrentPosition(),player.getCurrentPosition());
+                int  i;
+                for ( i = 0; i < path.length-1; i++) {
+                    System.out.print(path[i]+"->");
+                }
+                System.out.println(path[i]);
+            }
             renderingWorld=renderingWorld||
                    player.move(inputProcessor.getMove(in));
 
@@ -248,7 +262,7 @@ public class Engine {
                 renderingWorld=false;
             }
             if (drawHud){
-                this.drawTileDescription(hudTile.description(),this.uiDrawer);
+                this.drawTileDescription(hudTile.description()+" at "+tilePosition,this.uiDrawer);
                 drawHud=false;
             }
         }
