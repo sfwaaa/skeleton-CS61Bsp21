@@ -27,7 +27,7 @@ public class AStar implements PathFinder {
          */
         public int distanceFromSrc;
         /**
-         * the estimated distance from the node to src(value h(n))
+         * the estimated distance from the node to dst(value h(n))
          */
         public int heuristic;
         public Node(Node parent,Vector2Int position,int distanceFromSrc,Vector2Int dst){
@@ -56,6 +56,11 @@ public class AStar implements PathFinder {
                 return false;
             }
             return Vector2Int.equal(this.position,((Node) obj).position);
+        }
+
+        @Override
+        public int hashCode() {
+            return this.position.hashCode();
         }
     }
     private class NodeComparator implements Comparator<Node> {
@@ -94,7 +99,7 @@ public class AStar implements PathFinder {
      */
     private final TETile[] walkableTiles;
     /**
-     * the list of nodes waiting for being chosen.
+     * the list of pending nodes
      * here we simply maintained a sorted list
      * with the first having the smallest cost
      */
@@ -102,7 +107,7 @@ public class AStar implements PathFinder {
     /**
      * the list of nodes that have been chosen
      */
-    private ArrayList<Node> closedList;
+    private ArrayList<Node> closedList;//use hashset for better performance
     private Node dstNode;
 
     public AStar(TETile[] walkableTiles){
@@ -112,6 +117,9 @@ public class AStar implements PathFinder {
 
     @Override
     public Vector2Int[] getPath(World world, Vector2Int src, Vector2Int dst) {
+        if (Vector2Int.equal(src,dst)){
+            return new Vector2Int[]{src};
+        }
         openList=new ArrayList<>();
         closedList=new ArrayList<>();
         openList.add(new Node(null,src,0,dst));

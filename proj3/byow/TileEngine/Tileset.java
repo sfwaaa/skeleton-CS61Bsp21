@@ -33,7 +33,11 @@ public class Tileset {
     public static final TETile SAND = new TETile('▒', Color.yellow, Color.black, "sand");
     public static final TETile MOUNTAIN = new TETile('▲', Color.gray, Color.black, "mountain");
     public static final TETile TREE = new TETile('♠', Color.green, Color.black, "tree");
+
     public static final TETile TRACKER = new TETile('◈', Color.red, Color.black, "someone tracing you");
+    public static final TETile TRACE_MARK = new TETile('○',new Color(209, 88, 42) , Color.black, "trajectory of the tracer");
+
+    //funny characters: ●∙◌○
 }
 
 

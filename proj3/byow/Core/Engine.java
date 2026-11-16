@@ -3,6 +3,7 @@ package byow.Core;
 import byow.Entity.MovableObject;
 import byow.Entity.PathFinding.AStar;
 import byow.Entity.PathFinding.PathFinder;
+import byow.Entity.Tracer;
 import byow.Input.Processor.*;
 import byow.Input.*;
 import byow.Persistent.GamePrefs;
@@ -12,6 +13,9 @@ import byow.World.*;
 import byow.World.Generation.Room.Builder.*;
 import byow.World.Generation.Room.*;
 import byow.World.Generation.*;
+import byow.World.Rendering.PostProcessor;
+import byow.World.Rendering.TrajectoryMarker;
+import byow.World.Rendering.WorldRenderer;
 
 import java.awt.*;
 import java.util.Random;
@@ -40,6 +44,9 @@ public class Engine {
     private UIDrawer uiDrawer=null;
     private Vector2Int initialPlayerPosition =null;
     private GamePrefs prefs;
+
+    //postprocessors
+    private TrajectoryMarker trajectoryMarker;
 
 
     //seeds for testing
@@ -105,9 +112,18 @@ public class Engine {
         }
         world=generator.generateWorld(worldSize,inputSeed,Tileset.NOTHING);
 
-        MovableObject player=initializePlayer(generator);
-        MovableObject tracer=initializeMoveableObjects(world,generator,new TETile[]{Tileset.WALL},new TETile[]{Tileset.TRACKER})[0];
+        Random random=new Random(inputSeed);
+        MovableObject player=initializePlayer(generator,random);
+        MovableObject[] tracerObj=initializeMoveableObjects(world,generator,random,
+                new TETile[]{Tileset.WALL,Tileset.AVATAR},new TETile[]{Tileset.TRACKER});
+        Tracer tracer=new Tracer(tracerObj[0],player,new AStar(new TETile[]{Tileset.FLOOR}));
+
         worldRenderer.renderWorld(world);
+
+        trajectoryMarker=new TrajectoryMarker
+                (tracer,new TETile[]{Tileset.FLOOR},Tileset.TRACE_MARK);
+        worldRenderer.setPostProcessors(new PostProcessor[]{trajectoryMarker});
+
         exploringLoop(inputReader,new PlayerInputProcessor(),player,tracer);
         prefs.save(inputSeed,player.getCurrentPosition());
         System.out.println("exit!");
@@ -178,7 +194,7 @@ public class Engine {
             return null;
         }
         world=generator.generateWorld(worldSize,this.inputSeed,Tileset.NOTHING);
-        MovableObject player=initializePlayer(generator);
+        MovableObject player=initializePlayer(generator,new Random(inputSeed));
 
         PlayerInputProcessor playerInputProcessor=new PlayerInputProcessor();
         while ((in=reader.readInput())!=null){
@@ -221,12 +237,12 @@ public class Engine {
     }
     //may require passing so many params, so make some of them member variables
     private void exploringLoop(InputReader inputReader,PlayerInputProcessor inputProcessor,
-                               MovableObject player,MovableObject tracer){
+                               MovableObject player,Tracer tracer){
         Vector2Int tilePosition;
         TETile hudTile=null;
         String previousHud="";
         boolean drawHud=false;
-        boolean renderingWorld=false;
+        boolean needRenderingWorld=false;
         Character in;
         PathFinder finder=new AStar(new TETile[]{Tileset.FLOOR});
         while (true){
@@ -235,31 +251,29 @@ public class Engine {
             if (world.validPosition(tilePosition)){
                 hudTile=world.getTile(tilePosition);
                 drawHud=!hudTile.description().equals(previousHud);
-                renderingWorld=renderingWorld||drawHud;
+                needRenderingWorld=needRenderingWorld||drawHud;
                 previousHud=hudTile.description();
             }
 
             in=inputReader.readInput();
-            //temp code
-            if (in!=null&&in=='f'){
-                Vector2Int[] path=finder.getPath(world,tracer.getCurrentPosition(),player.getCurrentPosition());
-                int  i;
-                for ( i = 0; i < path.length-1; i++) {
-                    System.out.print(path[i]+"->");
-                }
-                System.out.println(path[i]);
-            }
-            renderingWorld=renderingWorld||
+
+
+            needRenderingWorld=needRenderingWorld||
                    player.move(inputProcessor.getMove(in));
+
+            if (tracer.canTrace()){
+                tracer.move();
+                needRenderingWorld=true;
+            }
 
             if (inputProcessor.getQuit(in)){
                 break;
             }
 
             //process rendering
-            if (renderingWorld){
+            if (needRenderingWorld){
                 this.worldRenderer.renderWorld(world);
-                renderingWorld=false;
+                needRenderingWorld=false;
             }
             if (drawHud){
                 this.drawTileDescription(hudTile.description()+" at "+tilePosition,this.uiDrawer);
@@ -367,11 +381,10 @@ public class Engine {
      * @param avatars avatars whit each representing a movable objects to be initialized
      * @return initialized objects,the same length as avatars
      */
-    private MovableObject[] initializeMoveableObjects(World world,WorldGenerator generator,TETile[] obstacles,TETile[] avatars){
+    private MovableObject[] initializeMoveableObjects(World world,WorldGenerator generator,Random random,TETile[] obstacles,TETile[] avatars){
         if (avatars.length==0){
             return null;
         }
-        Random random=new Random(this.inputSeed);
         MovableObject[] objects=new MovableObject[avatars.length];
         MovableObject newObject;
         Vector2Int randomPosition=null;
@@ -385,14 +398,14 @@ public class Engine {
         }
         return objects;
     }
-    private MovableObject initializePlayer(WorldGenerator generator){
+    private MovableObject initializePlayer(WorldGenerator generator,Random random){
        if (this.initialPlayerPosition ==null){
-           MovableObject[] entities=this.initializeMoveableObjects(this.world,generator,
-                   new TETile[]{Tileset.WALL},new TETile[]{Tileset.AVATAR});
+           MovableObject[] entities=this.initializeMoveableObjects(this.world,generator,random,
+                   new TETile[]{Tileset.WALL,Tileset.TRACKER},new TETile[]{Tileset.AVATAR});
            return entities[0];
        }
        MovableObject player=new MovableObject(this.world,
-               new TETile[]{Tileset.WALL},Tileset.AVATAR);
+               new TETile[]{Tileset.WALL,Tileset.TRACKER},Tileset.AVATAR);
        player.setInitialPosition(initialPlayerPosition);
        return player;
     }

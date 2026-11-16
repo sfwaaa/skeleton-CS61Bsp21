@@ -1,6 +1,9 @@
-package byow.World;
+package byow.World.Rendering;
 
 import byow.TileEngine.TERenderer;
+import byow.TileEngine.TETile;
+import byow.World.Vector2Int;
+import byow.World.World;
 
 /**
  * Rendering the world,avoid using TERenderer directly
@@ -14,6 +17,7 @@ public class WorldRenderer {
     private final int tileSizeInPixel;
     private final int paddingLeft;
     private final int paddingDown;
+    private PostProcessor[] postProcessors;
 
     /**
      * Calculate the size of the world that a renderer can (at least) render
@@ -36,6 +40,7 @@ public class WorldRenderer {
         this.tileSizeInPixel=tileSizeInPixel;
         this.paddingDown=paddingDown;
         this.paddingLeft=paddingLeft;
+        this.postProcessors=new PostProcessor[0];
      }
 
     /**
@@ -46,8 +51,38 @@ public class WorldRenderer {
          this.renderer.initialize(canvasSize.x/tileSizeInPixel,canvasSize.y/tileSizeInPixel,
                  paddingLeft,paddingDown);
      }
+
+    /**
+     * assign the processor to post process the frame.
+     * The renderer will process the frame from postProcessors[0] to the last one
+     */
+     public void setPostProcessors(PostProcessor[] postProcessors){
+         if (postProcessors==null){
+             return;
+         }
+         this.postProcessors=postProcessors;
+     }
      public void renderWorld(World world){
-         this.renderer.renderFrame(world.getFrame());
+         //note: a TETile is immutable
+         this.renderer.renderFrame(processFrame(world.getFrame()));
      }
 
+    /**
+     * process the frame,return a copy of it
+     * @return copy of the processed frame
+     */
+     private TETile[][] processFrame(TETile[][] frame){
+         int width=frame.length;
+         int height=frame[0].length;
+         TETile[][] pendingFrame=new TETile[width][height];
+         for (int x = 0; x < width; x++) {
+             System.arraycopy(frame[x], 0, pendingFrame[x], 0, height);
+         }
+         for (PostProcessor postProcessor : postProcessors) {
+             if (postProcessor.enabled) {
+                 postProcessor.process(pendingFrame);
+             }
+         }
+         return pendingFrame;
+     }
 }

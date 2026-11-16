@@ -51,6 +51,10 @@ public final class MovableObject {
     public Vector2Int getCurrentPosition(){
         return currentPosition;
     }
+
+    public World getWorld(){
+       return this.world;
+    }
     private boolean isObstacle(TETile tile){
         //since the class TETile is not defined by me,
         //I can only use this naive loop to check tiles

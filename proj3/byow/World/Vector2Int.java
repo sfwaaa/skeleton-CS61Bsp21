@@ -1,6 +1,7 @@
 package byow.World;
 
 import java.io.Serializable;
+import java.util.Objects;
 
 /**
  * The simple representation of the 2-dimensional vector with integer component
@@ -22,6 +23,10 @@ public class Vector2Int {
     public static Vector2Int plus(Vector2Int a,Vector2Int b){
         return new Vector2Int(a.x+b.x,a.y+b.y);
     }
+
+    /**
+     * a-b
+     */
     public static Vector2Int minus(Vector2Int a,Vector2Int b){
         return new Vector2Int(a.x-b.x,a.y-b.y);
     }
@@ -33,7 +38,7 @@ public class Vector2Int {
         return new Vector2Int(a.x*d, a.y*d);
     }
     public static boolean equal(Vector2Int v1,Vector2Int v2){
-        return v1.x==v2.x && v1.y==v2.y;
+        return v1!=null && v2!=null && v1.x==v2.x && v1.y==v2.y;
     }
     //maybe times(a,b)...
 
@@ -67,6 +72,9 @@ public class Vector2Int {
 
     @Override
     public boolean equals(Object obj) {
+        if (obj==this){
+            return true;
+        }
         if (obj==null){
             return false;
         }
@@ -75,5 +83,10 @@ public class Vector2Int {
         }
         Vector2Int v=(Vector2Int) obj;
         return v.x==this.x&&v.y==this.y;
+    }
+
+    @Override
+    public int hashCode() {
+        return Objects.hash(x,y);//handy way to compute hashcode
     }
 }
