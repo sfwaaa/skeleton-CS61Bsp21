@@ -14,6 +14,8 @@ public class PlayerInputProcessor {
     private static final char COMMAND_LEFT='a';
     private static final char COMMAND_DOWN='s';
     private static final char COMMAND_RIGHT='d';
+    private static final char COMMAND_TOGGLE_MARK='t';
+    private static final char COMMAND_FOG='f';
     //used for :Q
     private Character leadingChar=null;
     //return the rounded position of the mouse,
@@ -64,6 +66,20 @@ public class PlayerInputProcessor {
         leadingChar=null;
         return false;
     }
+
+   public boolean getToggleTrace(Character in){
+       if (in==null){
+           return false;
+       }
+       return equalCommand(in,COMMAND_TOGGLE_MARK);
+   }
+    public boolean getToggleFog(Character in){
+        if (in==null){
+            return false;
+        }
+        return equalCommand(in,COMMAND_FOG);
+    }
+
     //insensitive
     private boolean equalCommand(Character in,char command){
         return Character.toLowerCase(in)==command;

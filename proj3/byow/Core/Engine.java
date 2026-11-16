@@ -13,6 +13,7 @@ import byow.World.*;
 import byow.World.Generation.Room.Builder.*;
 import byow.World.Generation.Room.*;
 import byow.World.Generation.*;
+import byow.World.Rendering.FogVision;
 import byow.World.Rendering.PostProcessor;
 import byow.World.Rendering.TrajectoryMarker;
 import byow.World.Rendering.WorldRenderer;
@@ -47,6 +48,7 @@ public class Engine {
 
     //postprocessors
     private TrajectoryMarker trajectoryMarker;
+    private FogVision fogVision;
 
 
     //seeds for testing
@@ -117,12 +119,14 @@ public class Engine {
         MovableObject[] tracerObj=initializeMoveableObjects(world,generator,random,
                 new TETile[]{Tileset.WALL,Tileset.AVATAR},new TETile[]{Tileset.TRACKER});
         Tracer tracer=new Tracer(tracerObj[0],player,new AStar(new TETile[]{Tileset.FLOOR}));
+        //tracer.setMoveInterval(1000);nearly stop it
 
         worldRenderer.renderWorld(world);
 
         trajectoryMarker=new TrajectoryMarker
                 (tracer,new TETile[]{Tileset.FLOOR},Tileset.TRACE_MARK);
-        worldRenderer.setPostProcessors(new PostProcessor[]{trajectoryMarker});
+        fogVision=new FogVision(player,Tileset.NOTHING,new TETile[]{Tileset.WALL});
+        worldRenderer.setPostProcessors(new PostProcessor[]{trajectoryMarker,fogVision});
 
         exploringLoop(inputReader,new PlayerInputProcessor(),player,tracer);
         prefs.save(inputSeed,player.getCurrentPosition());
@@ -268,6 +272,14 @@ public class Engine {
 
             if (inputProcessor.getQuit(in)){
                 break;
+            }
+            if (inputProcessor.getToggleTrace(in)){
+                this.trajectoryMarker.enabled=!trajectoryMarker.enabled;
+                needRenderingWorld=true;
+            }
+            if (inputProcessor.getToggleFog(in)){
+                this.fogVision.enabled=!fogVision.enabled;
+                needRenderingWorld=true;
             }
 
             //process rendering
